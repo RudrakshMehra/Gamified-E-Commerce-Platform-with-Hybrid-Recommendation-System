@@ -1,7 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { auth, db } from "../firebase";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 import backgroundImage from "../assets/images/background3.jpg";
-
 
 export default function Register() {
   const navigate = useNavigate();
@@ -17,7 +19,7 @@ export default function Register() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (form.password !== form.confirmPassword) {
@@ -25,15 +27,36 @@ export default function Register() {
       return;
     }
 
-    console.log(form);
+    try {
+      // 🔥 Create Auth User
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        form.email,
+        form.password
+      );
 
-    navigate("/login");
+      const user = userCredential.user;
+
+      // 🔥 Store data in Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        name: form.name,
+        email: form.email,
+        createdAt: new Date()
+      });
+
+      alert("Registration Successful!");
+      navigate("/login");
+
+    } catch (error) {
+      alert(error.message);
+    }
   };
 
   return (
-    <div className="min-h-screen  flex justify-center items-center bg-cover"       style={{ backgroundImage: `url(${backgroundImage})` }}
+    <div
+      className="min-h-screen flex justify-center items-center bg-cover"
+      style={{ backgroundImage: `url(${backgroundImage})` }}
     >
-
       <div className="bg-gray-300 w-[380px] rounded-lg">
 
         <div className="bg-gradient-to-br from-cyan-300 to-sky-800 p-6 text-center font-bold text-2xl">
@@ -46,13 +69,16 @@ export default function Register() {
             name="name"
             placeholder="Full Name"
             onChange={handleChange}
+            required
             className="w-full p-2 rounded bg-white"
           />
 
           <input
             name="email"
+            type="email"
             placeholder="Email"
             onChange={handleChange}
+            required
             className="w-full p-2 rounded bg-white"
           />
 
@@ -61,6 +87,7 @@ export default function Register() {
             name="password"
             placeholder="Password"
             onChange={handleChange}
+            required
             className="w-full p-2 rounded bg-white"
           />
 
@@ -69,10 +96,14 @@ export default function Register() {
             name="confirmPassword"
             placeholder="Confirm Password"
             onChange={handleChange}
+            required
             className="w-full p-2 rounded bg-white"
           />
 
-          <button className="bg-gradient-to-br from-cyan-300 to-sky-800 w-full py-2 rounded">
+          <button
+            type="submit"
+            className="bg-gradient-to-br from-cyan-300 to-sky-800 w-full py-2 rounded"
+          >
             Register
           </button>
 
@@ -84,7 +115,6 @@ export default function Register() {
           </p>
 
         </form>
-
       </div>
     </div>
   );
