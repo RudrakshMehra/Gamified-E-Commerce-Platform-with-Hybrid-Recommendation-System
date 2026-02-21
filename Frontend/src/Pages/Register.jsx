@@ -1,8 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { auth, db } from "../firebase";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
 import backgroundImage from "../assets/images/background3.jpg";
 
 export default function Register() {
@@ -14,6 +11,8 @@ export default function Register() {
     password: "",
     confirmPassword: ""
   });
+
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -28,27 +27,33 @@ export default function Register() {
     }
 
     try {
-      // 🔥 Create Auth User
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        form.email,
-        form.password
-      );
+      setLoading(true);
 
-      const user = userCredential.user;
-
-      // 🔥 Store data in Firestore
-      await setDoc(doc(db, "users", user.uid), {
-        name: form.name,
-        email: form.email,
-        createdAt: new Date()
+      const res = await fetch("http://localhost:5000/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          password: form.password
+        })
       });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Registration failed");
+      }
 
       alert("Registration Successful!");
       navigate("/login");
 
     } catch (error) {
       alert(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -102,9 +107,10 @@ export default function Register() {
 
           <button
             type="submit"
+            disabled={loading}
             className="bg-gradient-to-br from-cyan-300 to-sky-800 w-full py-2 rounded"
           >
-            Register
+            {loading ? "Registering..." : "Register"}
           </button>
 
           <p

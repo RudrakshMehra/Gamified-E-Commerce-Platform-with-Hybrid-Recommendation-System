@@ -1,7 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { auth } from "../firebase";
-import { signInWithEmailAndPassword } from "firebase/auth";
 import Image from "../assets/images/login.jpg";
 import backgroundImage from "../assets/images/background3.jpg";
 
@@ -10,17 +8,46 @@ function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      alert("Please enter email and password");
+      return;
+    }
+
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      setLoading(true);
+
+      const res = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Login failed");
+      }
+
+      // ✅ Optional: store user
+      localStorage.setItem("user", JSON.stringify(data.user));
 
       alert("Login Successful!");
 
-      // navigate("/dashboard"); // Optional
+      // ✅ Optional redirect
+      // navigate("/dashboard");
 
     } catch (error) {
       alert(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -31,7 +58,7 @@ function LoginPage() {
         style={{ backgroundImage: `url(${backgroundImage})` }}
       >
         <div className="bg-zinc-300 w-[380px] rounded-lg overflow-hidden">
-
+          
           <div className="bg-gradient-to-br from-cyan-300 to-sky-800 p-6 flex justify-center">
             <div className="w-20 h-20 bg-white rounded-full overflow-hidden flex items-center justify-center">
               <img
@@ -43,7 +70,7 @@ function LoginPage() {
           </div>
 
           <div className="p-6 space-y-4">
-
+            
             <input
               type="email"
               placeholder="Email"
@@ -64,9 +91,10 @@ function LoginPage() {
 
             <button
               onClick={handleLogin}
+              disabled={loading}
               className="bg-gradient-to-br from-cyan-300 to-sky-800 w-full py-2 rounded"
             >
-              Login
+              {loading ? "Logging in..." : "Login"}
             </button>
 
             <p
