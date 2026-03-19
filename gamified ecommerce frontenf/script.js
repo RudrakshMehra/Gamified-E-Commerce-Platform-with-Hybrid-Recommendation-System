@@ -1,295 +1,350 @@
-// =====================================
-// STORAGE HELPERS
-// =====================================
-function saveToStorage(key, value) {
-    localStorage.setItem(key, JSON.stringify(value));
+const API_URL = "http://localhost:5000/api";
+
+/* =========================
+   NAVBAR MENU
+========================= */
+function toggleMenu(){
+    const nav = document.getElementById("nav");
+    nav.classList.toggle("show");
 }
 
-function getFromStorage(key) {
-    return JSON.parse(localStorage.getItem(key));
+/* =========================
+   REGISTER
+========================= */
+async function register(){
+
+    const name = document.getElementById("regName").value;
+    const email = document.getElementById("regEmail").value;
+    const password = document.getElementById("regPassword").value;
+
+    try{
+
+        const res = await fetch(API_URL + "/auth/register",{
+            method:"POST",
+            headers:{
+                "Content-Type":"application/json"
+            },
+            body:JSON.stringify({
+                name,
+                email,
+                password
+            })
+        });
+
+        const data = await res.json();
+
+        if(res.ok){
+            alert("Registration successful");
+            window.location.href = "login.html";
+        }else{
+            alert(data.message || "Registration failed");
+        }
+
+    }catch(err){
+        console.error(err);
+        alert("Server error");
+    }
 }
 
-// =====================================
-// CART SYSTEM
-// =====================================
-let cart = getFromStorage("cart") || [];
+/* =========================
+   LOGIN
+========================= */
+async function login(){
 
-function saveCart() {
-    saveToStorage("cart", cart);
+    const email = document.getElementById("loginEmail").value;
+    const password = document.getElementById("loginPassword").value;
+
+    try{
+
+        const res = await fetch(API_URL + "/auth/login",{
+            method:"POST",
+            headers:{
+                "Content-Type":"application/json"
+            },
+            body:JSON.stringify({
+                email,
+                password
+            })
+        });
+
+        const data = await res.json();
+
+        if(res.ok){
+
+            localStorage.setItem("token",data.token);
+            localStorage.setItem("loggedIn",true);
+            localStorage.setItem("user",JSON.stringify(data.user));
+
+            alert("Login successful");
+
+            window.location.href = "index.html";
+
+        }else{
+            alert(data.message || "Login failed");
+        }
+
+    }catch(err){
+        console.error(err);
+        alert("Server error");
+    }
 }
 
-// =====================================
-// ADD TO CART (Redirect to cart page)
-// =====================================
-function addToCart(name, price) {
+/* =========================
+   LOAD PRODUCTS
+========================= */
 
-    price = Number(price); // Ensure price is number
+async function loadProducts(){
 
-    cart = getFromStorage("cart") || [];
+    const container = document.getElementById("products");
 
-    const existingItem = cart.find(item => item.name === name);
+    if(!container) return;
 
-    if (existingItem) {
-        existingItem.quantity += 1;
-    } else {
-        cart.push({ name: name, price: price, quantity: 1 });
+    try{
+
+        const res = await fetch(API_URL + "/products");
+
+        const products = await res.json();
+
+        container.innerHTML = "";
+
+        products.forEach(product=>{
+
+            const imageURL = "http://localhost:5000/uploads/" + product.image;
+
+            container.innerHTML += `
+            <article class="product-card">
+
+                <img src="${imageURL}" alt="${product.name}">
+
+                <h3>${product.name}</h3>
+
+                <p class="price">₹${product.price}</p>
+
+                <button onclick="addToCart(${product.id},'${product.name}',${product.price})">
+                    Add to Cart
+                </button>
+
+            </article>
+            `;
+
+        });
+
+    }catch(err){
+        console.error(err);
+    }
+}
+
+/* =========================
+   CART
+========================= */
+
+function getCart(){
+    return JSON.parse(localStorage.getItem("cart")) || [];
+}
+
+function saveCart(cart){
+    localStorage.setItem("cart",JSON.stringify(cart));
+}
+
+function addToCart(id,name,price){
+
+    let cart = getCart();
+
+    const item = cart.find(p=>p.id === id);
+
+    if(item){
+        item.quantity += 1;
+    }else{
+        cart.push({
+            id,
+            name,
+            price,
+            quantity:1
+        });
     }
 
-    saveCart();
+    saveCart(cart);
+
     updateCartCount();
-    showToast("Item added to cart 🎉");
 
-    // Redirect to cart page
-    setTimeout(() => {
-        window.location.href = "cart.html";
-    }, 600);
+    alert("Added to cart");
 }
 
-// =====================================
-// UPDATE CART COUNT
-// =====================================
-function updateCartCount() {
-    cart = getFromStorage("cart") || [];
+function updateCartCount(){
 
-    const countElement = document.getElementById("cart-count");
-    if (!countElement) return;
+    const cart = getCart();
 
-    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-    countElement.innerText = totalItems;
+    const count = cart.reduce((sum,item)=>sum + item.quantity,0);
+
+    const el = document.getElementById("cart-count");
+
+    if(el) el.innerText = count;
 }
 
-// =====================================
-// DISPLAY CART (FIXED)
-// =====================================
-function displayCart() {
+/* =========================
+   LOAD CART
+========================= */
 
-    cart = getFromStorage("cart") || [];
+function loadCart(){
 
-    const cartItems = document.getElementById("cart-items");
-    const totalElement = document.getElementById("cart-total");
-    const mrpElement = document.getElementById("mrp-total");
-    const discountElement = document.getElementById("discount-total");
-    const saveElement = document.getElementById("save-amount");
+    const container = document.getElementById("cart-items");
 
-    if (!cartItems) return;
+    if(!container) return;
 
-    cartItems.innerHTML = "";
+    const cart = getCart();
 
-    if (cart.length === 0) {
-        cartItems.innerHTML = "<p>Your cart is empty.</p>";
-        if (totalElement) totalElement.innerText = 0;
-        if (mrpElement) mrpElement.innerText = 0;
-        if (discountElement) discountElement.innerText = 0;
-        if (saveElement) saveElement.innerText = 0;
-        return;
-    }
+    container.innerHTML = "";
 
     let total = 0;
-    let mrp = 0;
 
-    cart.forEach((item, index) => {
+    cart.forEach(item=>{
 
-        const itemTotal = Number(item.price) * Number(item.quantity);
-        total += itemTotal;
+        total += item.price * item.quantity;
 
-        const itemMRP = (Number(item.price) * 1.2) * Number(item.quantity);
-        mrp += itemMRP;
-
-        const div = document.createElement("div");
-        div.classList.add("cart-item-box");
-
-        div.innerHTML = `
-            <div class="cart-item-left">
-                <img src="https://via.placeholder.com/120">
-            </div>
+        container.innerHTML += `
+        <div class="cart-item-box">
 
             <div class="cart-item-center">
+
                 <h4>${item.name}</h4>
+
                 <p>₹${item.price}</p>
 
                 <div class="qty-controls">
-                    <button onclick="decreaseQty(${index})">-</button>
-                    <span>${item.quantity}</span>
-                    <button onclick="increaseQty(${index})">+</button>
+
+                    <button onclick="changeQty(${item.id},-1)">-</button>
+
+                    ${item.quantity}
+
+                    <button onclick="changeQty(${item.id},1)">+</button>
+
                 </div>
 
-                <button onclick="removeItem(${index})" class="remove-btn">
-                    REMOVE
-                </button>
             </div>
-        `;
 
-        cartItems.appendChild(div);
+        </div>
+        `;
     });
 
-    const discount = Math.round(mrp - total);
-
-    if (totalElement) totalElement.innerText = total;
-    if (mrpElement) mrpElement.innerText = Math.round(mrp);
-    if (discountElement) discountElement.innerText = discount;
-    if (saveElement) saveElement.innerText = discount;
+    document.getElementById("mrp-total").innerText = total;
+    document.getElementById("cart-total").innerText = total;
 }
 
-// =====================================
-// QUANTITY CONTROLS
-// =====================================
-function increaseQty(index) {
-    cart = getFromStorage("cart") || [];
-    cart[index].quantity += 1;
-    saveCart();
-    displayCart();
-    updateCartCount();
-}
+function changeQty(id,amount){
 
-function decreaseQty(index) {
-    cart = getFromStorage("cart") || [];
+    let cart = getCart();
 
-    if (cart[index].quantity > 1) {
-        cart[index].quantity -= 1;
-    } else {
-        cart.splice(index, 1);
+    const item = cart.find(p=>p.id === id);
+
+    if(!item) return;
+
+    item.quantity += amount;
+
+    if(item.quantity <= 0){
+        cart = cart.filter(p=>p.id !== id);
     }
 
-    saveCart();
-    displayCart();
-    updateCartCount();
+    saveCart(cart);
+
+    loadCart();
 }
 
-function removeItem(index) {
-    cart = getFromStorage("cart") || [];
-    cart.splice(index, 1);
-    saveCart();
-    displayCart();
-    updateCartCount();
-}
+/* =========================
+   PLACE ORDER
+========================= */
 
-// =====================================
-// CHECKOUT
-// =====================================
-function checkout() {
+async function checkout(){
 
-    cart = getFromStorage("cart") || [];
+    const token = localStorage.getItem("token");
 
-    if (cart.length === 0) {
-        showToast("Cart is empty ⚠️");
+    if(!token){
+        alert("Please login first");
+        window.location.href="login.html";
         return;
     }
 
-    showToast("Order placed successfully 🎉");
+    const cart = getCart();
 
-    cart = [];
-    saveCart();
-    displayCart();
-    updateCartCount();
-}
-
-// =====================================
-// REWARD SYSTEM
-// =====================================
-function getRewardPoints() {
-    return parseInt(localStorage.getItem("points")) || 0;
-}
-
-function addRewardPoints(amount) {
-    let points = getRewardPoints();
-    points += amount;
-    localStorage.setItem("points", points);
-}
-
-// =====================================
-// AUTH SYSTEM
-// =====================================
-function register() {
-    const name = document.getElementById("regName")?.value;
-    const email = document.getElementById("regEmail")?.value;
-    const password = document.getElementById("regPassword")?.value;
-
-    if (!name || !email || !password) {
-        showToast("Please fill all fields ⚠️");
+    if(cart.length === 0){
+        alert("Cart empty");
         return;
     }
 
-    const encodedPassword = btoa(password);
+    try{
 
-    saveToStorage("user", { name, email, password: encodedPassword });
+        const res = await fetch(API_URL + "/orders",{
 
-    showToast("Registration successful 🎉");
-    window.location.href = "login.html";
-}
+            method:"POST",
 
-function login() {
-    const email = document.getElementById("loginEmail")?.value;
-    const password = document.getElementById("loginPassword")?.value;
+            headers:{
+                "Content-Type":"application/json",
+                "Authorization":"Bearer " + token
+            },
 
-    const user = getFromStorage("user");
+            body:JSON.stringify({
+                items:cart
+            })
 
-    if (user && user.email === email && user.password === btoa(password)) {
-        localStorage.setItem("loggedIn", "true");
-        showToast("Login successful 🎉");
-        window.location.href = "index.html";
-    } else {
-        showToast("Invalid credentials ❌");
+        });
+
+        const data = await res.json();
+
+        if(res.ok){
+
+            alert("Order placed successfully");
+
+            localStorage.removeItem("cart");
+
+            window.location.href="index.html";
+
+        }else{
+            alert(data.message);
+        }
+
+    }catch(err){
+        console.error(err);
     }
+
 }
 
-function logout() {
+/* =========================
+   PROFILE
+========================= */
+
+function loadProfile(){
+
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    if(!user) return;
+
+    const name = document.getElementById("profileName");
+    const email = document.getElementById("profileEmail");
+
+    if(name) name.innerText = user.name;
+    if(email) email.innerText = user.email;
+}
+
+function logout(){
+
+    localStorage.removeItem("token");
     localStorage.removeItem("loggedIn");
-    showToast("Logged out 👋");
-    window.location.href = "login.html";
+    localStorage.removeItem("user");
+
+    window.location.href="login.html";
 }
 
-// =====================================
-// PROFILE
-// =====================================
-function loadProfile() {
-    const user = getFromStorage("user");
+/* =========================
+   PAGE LOAD
+========================= */
 
-    const nameField = document.getElementById("profileName");
-    const emailField = document.getElementById("profileEmail");
-    const rewardField = document.getElementById("rewardPoints");
-
-    if (user) {
-        if (nameField) nameField.innerText = user.name;
-        if (emailField) emailField.innerText = user.email;
-    }
-
-    if (rewardField) {
-        rewardField.innerText = getRewardPoints();
-    }
-}
-
-// =====================================
-// TOAST
-// =====================================
-function showToast(message) {
-    const toast = document.createElement("div");
-    toast.className = "toast";
-    toast.innerText = message;
-    document.body.appendChild(toast);
-
-    setTimeout(() => {
-        toast.remove();
-    }, 2000);
-}
-
-// =====================================
-// INIT
-// =====================================
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded",()=>{
 
     updateCartCount();
 
-    // Only run cart display if cart page exists
-    if (document.getElementById("cart-items")) {
-        displayCart();
-    }
+    loadProducts();
+
+    loadCart();
 
     loadProfile();
 
-    // Protect profile page
-    if (window.location.pathname.includes("profile.html")) {
-        if (!localStorage.getItem("loggedIn")) {
-            window.location.href = "login.html";
-        }
-    }
 });
