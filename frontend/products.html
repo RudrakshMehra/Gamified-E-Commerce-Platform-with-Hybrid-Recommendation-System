@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Products - ShopEasy</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Browse products at ShopEasy.">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <div class="logo">🎮 ShopEasy</div>
+
+    <nav id="nav">
+        <a href="index.html">Home</a>
+        <a href="profile.html">Profile</a>
+        <a href="cart.html">Cart (<span id="cart-count">0</span>)</a>
+    </nav>
+
+    <button class="menu-btn" onclick="toggleMenu()">☰</button>
+</header>
+
+<main>
+
+<section class="products">
+
+    <article class="product-card" data-id="1">
+        <img src="https://via.placeholder.com/200" alt="Smartphone" loading="lazy">
+        <h3>Smartphone</h3>
+        <p class="price">₹15,000</p>
+        <div class="reward">🎯 Earn 150 Points</div>
+        <button onclick="addToCart(1,'Smartphone',15000)">
+            Add to Cart
+        </button>
+    </article>
+
+    <article class="product-card" data-id="2">
+        <img src="https://via.placeholder.com/200" alt="Laptop" loading="lazy">
+        <h3>Laptop</h3>
+        <p class="price">₹55,000</p>
+        <div class="reward">🎯 Earn 550 Points</div>
+        <button class="add-to-cart" data-name="Laptop" data-price="55000">
+            Add to Cart
+        </button>
+    </article>
+
+</section>
+
+</main>
+
+<footer>
+    <p>© 2026 ShopEasy. All Rights Reserved.</p>
+</footer>
+
+<script src="script.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".add-to-cart").forEach(button => {
+        button.addEventListener("click", function () {
+            const name = this.dataset.name;
+            const price = this.dataset.price;
+            addToCart(name, parseInt(price));
+        });
+    });
+});
+</script>
+
+</body>
+</html>

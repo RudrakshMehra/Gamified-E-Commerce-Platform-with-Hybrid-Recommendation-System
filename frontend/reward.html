@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LevelUp XP Rewards</title>
+
+<style>
+body{
+    margin:0;
+    font-family: Arial, sans-serif;
+    background:#0f172a;
+    color:white;
+}
+
+.navbar{
+    background:#111827;
+    padding:15px 40px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.navbar a{
+    color:#38bdf8;
+    text-decoration:none;
+}
+
+.container{
+    max-width:900px;
+    margin:40px auto;
+    padding:20px;
+}
+
+.level-card{
+    background:linear-gradient(135deg,#1e3a8a,#2563eb);
+    padding:30px;
+    border-radius:15px;
+    text-align:center;
+    box-shadow:0 10px 30px rgba(0,0,0,0.5);
+}
+
+.level-badge{
+    font-size:22px;
+    font-weight:bold;
+    background:#f59e0b;
+    display:inline-block;
+    padding:8px 20px;
+    border-radius:30px;
+    margin-bottom:15px;
+}
+
+.progress-container{
+    background:#1f2937;
+    height:22px;
+    border-radius:20px;
+    overflow:hidden;
+    margin-top:15px;
+}
+
+.progress-bar{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg,#22d3ee,#3b82f6);
+    transition:1s;
+}
+
+.reward-list{
+    margin-top:30px;
+}
+
+.reward-item{
+    background:#1f2937;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:15px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.reward-item button{
+    padding:6px 15px;
+    border:none;
+    background:#22c55e;
+    color:white;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+.reward-item button:disabled{
+    background:gray;
+    cursor:not-allowed;
+}
+
+.footer{
+    text-align:center;
+    margin-top:40px;
+    padding:20px;
+    background:#111827;
+}
+</style>
+</head>
+
+<body>
+
+<div class="navbar">
+    <div>🔥 LevelUp XP Rewards</div>
+    <div>
+        <a href="index.html">Home</a>
+    </div>
+</div>
+
+<div class="container">
+
+    <div class="level-card">
+        <div class="level-badge" id="levelBadge">Level 1</div>
+        <h2>Total XP: <span id="xp">0</span></h2>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <p id="nextLevelText"></p>
+    </div>
+
+    <div class="reward-list">
+        <h3>🎁 Level Rewards</h3>
+
+        <div class="reward-item">
+            <span>Level 2 - ₹100 Voucher</span>
+            <button id="reward2" onclick="claimReward(2)">Claim</button>
+        </div>
+
+        <div class="reward-item">
+            <span>Level 3 - Free Earphones</span>
+            <button id="reward3" onclick="claimReward(3)">Claim</button>
+        </div>
+
+        <div class="reward-item">
+            <span>Level 5 - ₹500 Voucher</span>
+            <button id="reward5" onclick="claimReward(5)">Claim</button>
+        </div>
+
+    </div>
+
+</div>
+
+<div class="footer">
+© 2026 MyStore XP System
+</div>
+
+<script>
+
+function getXP(){
+    return parseInt(localStorage.getItem("xp")) || 0;
+}
+
+function setXP(value){
+    localStorage.setItem("xp",value);
+}
+
+function getLevel(xp){
+    return Math.floor(xp / 500) + 1; 
+}
+
+function loadRewards(){
+
+    let xp = getXP();
+    let level = getLevel(xp);
+    let nextLevelXP = level * 500;
+
+    document.getElementById("xp").innerText = xp;
+    document.getElementById("levelBadge").innerText = "Level " + level;
+
+    let percent = ((xp % 500) / 500) * 100;
+    document.getElementById("progressBar").style.width = percent + "%";
+
+    document.getElementById("nextLevelText").innerText =
+        (nextLevelXP - xp) + " XP to next level";
+
+    checkRewardAccess(level);
+}
+
+function checkRewardAccess(level){
+    [2,3,5].forEach(lvl=>{
+        let btn = document.getElementById("reward"+lvl);
+        if(level >= lvl){
+            btn.disabled = false;
+        } else {
+            btn.disabled = true;
+        }
+    });
+}
+
+function claimReward(level){
+    alert("Reward for Level "+level+" claimed successfully 🎉");
+}
+
+document.addEventListener("DOMContentLoaded", loadRewards);
+
+</script>
+
+</body>
+</html>
