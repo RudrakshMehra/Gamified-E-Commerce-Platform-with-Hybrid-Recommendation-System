@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Profile | ShopXP</title>
+<link rel="stylesheet" href="style.css">
+
+<style>
+.level-box{
+    background: linear-gradient(135deg,#1e3a8a,#2563eb);
+    color:white;
+    padding:20px;
+    border-radius:12px;
+    margin-top:15px;
+}
+
+.level-icon{
+    font-size:22px;
+    font-weight:bold;
+}
+
+.progress-container{
+    background:#ddd;
+    height:18px;
+    border-radius:20px;
+    overflow:hidden;
+    margin-top:10px;
+}
+
+.progress-bar{
+    height:100%;
+    width:0%;
+    background:orange;
+    transition:1s;
+}
+</style>
+</head>
+
+<body>
+
+<header class="header">
+    <div class="logo">🎮 ShopXP</div>
+
+    <nav id="nav" class="nav">
+        <a href="index.html">Home</a>
+        <a href="cart.html">Cart (<span id="cart-count">0</span>)</a>
+        <a href="profile.html">Profile</a>
+    </nav>
+
+    <button class="menu-btn" onclick="toggleMenu()">☰</button>
+</header>
+
+<div class="profile-container">
+
+    <h2>My Profile 👤</h2>
+
+    <div class="profile-box">
+        <p><strong>Name:</strong> <span id="profileName">Loading...</span></p>
+    </div>
+
+    <div class="profile-box">
+        <p><strong>Email:</strong> <span id="profileEmail">Loading...</span></p>
+    </div>
+
+    <!-- LEVEL SYSTEM -->
+    <div class="profile-box level-box">
+        <div class="level-icon" id="levelIcon">Level 1 🔥</div>
+        <p>XP: <span id="xpPoints">0</span></p>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="xpProgress"></div>
+        </div>
+
+        <p id="nextLevelText"></p>
+    </div>
+
+    <button class="logout-btn" id="logoutBtn">Logout</button>
+
+</div>
+
+<footer>
+    <Center>
+    <p>© 2026 ShopXP. All Rights Reserved.</p>
+    </Center>
+</footer>
+
+<script src="script.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    // Redirect if not logged in
+    if (!user) {
+        window.location.href = "login.html";
+        return;
+    }
+
+    // Load user data
+    document.getElementById("profileEmail").innerText = user.email;
+    document.getElementById("profileName").innerText =
+        user.name || user.email.split("@")[0];
+
+    // Logout
+    document.getElementById("logoutBtn").addEventListener("click", function(){
+        localStorage.removeItem("user");
+        window.location.href = "login.html";
+    });
+
+    // Load cart count
+    updateCartCount();
+
+    // Load XP system
+    loadProfileLevel();
+});
+
+/* ===== LEVEL SYSTEM ===== */
+function loadProfileLevel(){
+
+    let xp = parseInt(localStorage.getItem("xp")) || 0;
+    let level = Math.floor(xp / 500) + 1;
+
+    document.getElementById("xpPoints").innerText = xp;
+
+    let icon = "🔥";
+
+    if(level >= 10){
+        icon = "💎 Diamond";
+    } 
+    else if(level >= 5){
+        icon = "🥇 Gold";
+    }
+    else if(level >= 3){
+        icon = "🥈 Silver";
+    }
+
+    document.getElementById("levelIcon").innerText =
+        "Level " + level + " " + icon;
+
+    let percent = ((xp % 500) / 500) * 100;
+    document.getElementById("xpProgress").style.width = percent + "%";
+
+    document.getElementById("nextLevelText").innerText =
+        (500 - (xp % 500)) + " XP to next level";
+}
+</script>
+
+</body>
+</html>

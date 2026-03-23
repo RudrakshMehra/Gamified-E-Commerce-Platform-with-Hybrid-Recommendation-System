@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Register | ShopXP</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family: Arial, sans-serif;
+}
+
+body{
+    background:#f1f3f6;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+
+.register-container{
+    width:800px;
+    height:520px;
+    background:white;
+    display:flex;
+    box-shadow:0 4px 20px rgba(0,0,0,0.1);
+    border-radius:8px;
+    overflow:hidden;
+}
+
+.left-panel{
+    width:40%;
+    background:#2874f0;
+    color:white;
+    padding:40px 30px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+}
+
+.left-panel h1{
+    font-size:28px;
+}
+
+.left-panel p{
+    font-size:16px;
+    line-height:1.6;
+}
+
+.left-panel img{
+    width:80%;
+    align-self:center;
+}
+
+.right-panel{
+    width:60%;
+    padding:50px 40px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+}
+
+.input-group{
+    margin-bottom:20px;
+}
+
+.input-group input{
+    width:100%;
+    padding:10px 5px;
+    border:none;
+    border-bottom:1px solid #ccc;
+    font-size:14px;
+    outline:none;
+}
+
+.input-group input:focus{
+    border-bottom:2px solid #2874f0;
+}
+
+.error{
+    color:red;
+    font-size:12px;
+}
+
+.success{
+    color:green;
+    font-size:13px;
+    margin-bottom:10px;
+}
+
+.register-btn{
+    background:#fb641b;
+    color:white;
+    padding:12px;
+    border:none;
+    cursor:pointer;
+    font-size:16px;
+    border-radius:5px;
+}
+
+.register-btn:hover{
+    background:#e55b14;
+}
+
+.login-link{
+    margin-top:25px;
+    text-align:center;
+}
+
+.login-link a{
+    text-decoration:none;
+    color:#2874f0;
+    font-weight:bold;
+}
+
+@media(max-width:768px){
+    .register-container{
+        width:95%;
+        height:auto;
+        flex-direction:column;
+    }
+    .left-panel,
+    .right-panel{
+        width:100%;
+    }
+}
+</style>
+</head>
+<body>
+
+<div class="register-container">
+
+    <div class="left-panel">
+        <div>
+            <h1>Looks like you're new here!</h1>
+            <p>Sign up to start shopping and earn rewards.</p>
+        </div>
+        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135789.png">
+    </div>
+
+    <div class="right-panel">
+
+        <form onsubmit="handleRegister(event)">
+
+            <div id="successMsg" class="success"></div>
+
+            <div class="input-group">
+                <input type="text" id="regName" placeholder="Enter Full Name" required>
+                <div id="nameError" class="error"></div>
+            </div>
+
+            <div class="input-group">
+                <input type="email" id="regEmail" placeholder="Enter Email" required>
+                <div id="emailError" class="error"></div>
+            </div>
+
+            <div class="input-group">
+                <input type="password" id="regPassword" placeholder="Create Password" required>
+                <div id="passwordError" class="error"></div>
+            </div>
+
+            <button type="submit" class="register-btn">Register</button>
+
+        </form>
+
+        <div class="login-link">
+            Already have an account? <a href="login.html">Login</a>
+        </div>
+
+    </div>
+
+</div>
+
+<script src="script.js"></script>
+
+<script>
+function handleRegister(event){
+    event.preventDefault();
+
+    let name = document.getElementById("regName").value.trim();
+    let email = document.getElementById("regEmail").value.trim();
+    let password = document.getElementById("regPassword").value.trim();
+
+    let isValid = true;
+
+    document.getElementById("nameError").innerText = "";
+    document.getElementById("emailError").innerText = "";
+    document.getElementById("passwordError").innerText = "";
+
+    if(name === ""){
+        document.getElementById("nameError").innerText = "Name is required";
+        isValid = false;
+    }
+
+    if(!email.includes("@")){
+        document.getElementById("emailError").innerText = "Enter valid email";
+        isValid = false;
+    }
+
+    if(password.length < 6){
+        document.getElementById("passwordError").innerText = "Password must be at least 6 characters";
+        isValid = false;
+    }
+
+    if(!isValid) return;
+
+    let user = {
+        name,
+        email,
+        password: btoa(password)
+    };
+
+    localStorage.setItem("user", JSON.stringify(user));
+
+    document.getElementById("successMsg").innerText = "Registration successful! Redirecting...";
+
+    setTimeout(() => {
+        window.location.href = "login.html"; // ✅ FIXED
+    }, 1200);
+}
+</script>
+
+</body>
+</html>

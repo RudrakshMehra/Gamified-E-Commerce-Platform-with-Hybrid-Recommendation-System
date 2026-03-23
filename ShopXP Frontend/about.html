@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About Us | ShopXP</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f1f3f6;
+}
+
+/* Navbar */
+.navbar {
+    background: #2874f0;
+    color: white;
+    padding: 15px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.navbar h2 {
+    margin: 0;
+}
+
+.navbar a {
+    color: white;
+    text-decoration: none;
+    margin-left: 20px;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.navbar a:hover {
+    text-decoration: underline;
+}
+
+/* Section */
+.section {
+    width: 90%;
+    max-width: 1000px;
+    margin: 40px auto;
+    background: white;
+    padding: 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border-radius: 8px;
+}
+
+.section h1 {
+    margin-bottom: 20px;
+}
+
+.section p {
+    line-height: 1.7;
+    color: #555;
+}
+
+/* Contact Section */
+.contact-section {
+    margin-top: 50px;
+}
+
+.contact-form {
+    display: flex;
+    flex-direction: column;
+}
+
+.contact-form input,
+.contact-form textarea {
+    margin-bottom: 15px;
+    padding: 12px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    border-radius: 5px;
+}
+
+.contact-form textarea {
+    resize: none;
+    height: 100px;
+}
+
+.contact-form button {
+    padding: 12px;
+    background: #fb641b;
+    border: none;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: 0.3s;
+}
+
+.contact-form button:hover {
+    background: #e55b14;
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    padding: 20px;
+    background: #172337;
+    color: white;
+    margin-top: 40px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 600px) {
+    .navbar {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .navbar div {
+        margin-top: 10px;
+    }
+
+    .navbar a {
+        display: inline-block;
+        margin: 10px;
+    }
+}
+</style>
+</head>
+<body>
+
+<!-- Navbar -->
+<div class="navbar">
+    <h2>MyStore</h2>
+    <div>
+        <a href="index.html">Home</a>
+        <a href="cart.html">Cart</a>
+        <a href="profile.html">Profile</a>
+    </div>
+</div>
+
+<!-- About Section -->
+<div class="section">
+    <h1>About Us</h1>
+
+    <p>
+        Welcome to MyStore! We are committed to providing high-quality products
+        at affordable prices. Our goal is to create a smooth and enjoyable
+        online shopping experience for our customers.
+    </p>
+
+    <p>
+        Founded with a passion for innovation and customer satisfaction,
+        MyStore focuses on delivering fast service, secure payments,
+        and trusted products.
+    </p>
+
+    <p>
+        We believe in quality, transparency, and customer happiness.
+        Thank you for choosing us!
+    </p>
+
+    <!-- Contact Section -->
+    <div class="contact-section">
+        <h2>Contact Us</h2>
+
+        <form class="contact-form" onsubmit="sendMessage(event)">
+            <input type="text" name="name" placeholder="Your Name" required>
+            <input type="email" name="email" placeholder="Your Email" required>
+            <textarea name="message" placeholder="Your Message" required></textarea>
+            <button type="submit">Send Message</button>
+        </form>
+    </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+    © 2026 ShopXP | All Rights Reserved
+</div>
+
+<script>
+function sendMessage(event) {
+    event.preventDefault();
+
+    alert("Thank you! Your message has been sent.");
+
+    // Reset form after submit
+    document.querySelector(".contact-form").reset();
+}
+</script>
+
+</body>
+</html>
