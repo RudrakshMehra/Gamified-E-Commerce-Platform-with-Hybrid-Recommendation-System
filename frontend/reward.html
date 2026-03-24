@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LevelUp XP Rewards</title>
+<title>Rewards | ShopXP</title>
 
 <style>
 body{
@@ -19,11 +19,13 @@ body{
     display:flex;
     justify-content:space-between;
     align-items:center;
+    flex-wrap:wrap;
 }
 
 .navbar a{
     color:#38bdf8;
     text-decoration:none;
+    margin-left:15px;
 }
 
 .container{
@@ -37,7 +39,6 @@ body{
     padding:30px;
     border-radius:15px;
     text-align:center;
-    box-shadow:0 10px 30px rgba(0,0,0,0.5);
 }
 
 .level-badge{
@@ -90,7 +91,6 @@ body{
 
 .reward-item button:disabled{
     background:gray;
-    cursor:not-allowed;
 }
 
 .footer{
@@ -105,9 +105,11 @@ body{
 <body>
 
 <div class="navbar">
-    <div>🔥 LevelUp XP Rewards</div>
+    <div>🔥 ShopXP Rewards</div>
     <div>
         <a href="index.html">Home</a>
+        <a href="profile.html">Profile</a>
+        <a href="cart.html">Cart (<span id="cart-count">0</span>)</a>
     </div>
 </div>
 
@@ -147,28 +149,32 @@ body{
 </div>
 
 <div class="footer">
-© 2026 MyStore XP System
+© 2026 ShopXP Rewards
 </div>
 
-<script>
+<script src="script.js"></script>
 
-function getXP(){
-    return parseInt(localStorage.getItem("xp")) || 0;
+<script>
+// ===== LOGIN CHECK =====
+const user = JSON.parse(localStorage.getItem("user"));
+if(!user){
+    window.location.href = "login.html";
 }
 
-function setXP(value){
-    localStorage.setItem("xp",value);
+// ===== XP SYSTEM =====
+function getXP(){
+    return parseInt(localStorage.getItem("xp")) || 0;
 }
 
 function getLevel(xp){
     return Math.floor(xp / 500) + 1; 
 }
 
+// ===== LOAD UI =====
 function loadRewards(){
 
     let xp = getXP();
     let level = getLevel(xp);
-    let nextLevelXP = level * 500;
 
     document.getElementById("xp").innerText = xp;
     document.getElementById("levelBadge").innerText = "Level " + level;
@@ -177,28 +183,52 @@ function loadRewards(){
     document.getElementById("progressBar").style.width = percent + "%";
 
     document.getElementById("nextLevelText").innerText =
-        (nextLevelXP - xp) + " XP to next level";
+        (500 - (xp % 500)) + " XP to next level";
 
     checkRewardAccess(level);
+    updateCartCount();
 }
 
+// ===== ENABLE BUTTONS =====
 function checkRewardAccess(level){
+    let claimed = JSON.parse(localStorage.getItem("claimedRewards")) || [];
+
     [2,3,5].forEach(lvl=>{
         let btn = document.getElementById("reward"+lvl);
-        if(level >= lvl){
+
+        if(claimed.includes(lvl)){
+            btn.innerText = "Claimed";
+            btn.disabled = true;
+        }
+        else if(level >= lvl){
             btn.disabled = false;
-        } else {
+        } 
+        else {
             btn.disabled = true;
         }
     });
 }
 
+// ===== CLAIM REWARD =====
 function claimReward(level){
-    alert("Reward for Level "+level+" claimed successfully 🎉");
+
+    let claimed = JSON.parse(localStorage.getItem("claimedRewards")) || [];
+
+    if(claimed.includes(level)){
+        alert("Already claimed!");
+        return;
+    }
+
+    claimed.push(level);
+    localStorage.setItem("claimedRewards", JSON.stringify(claimed));
+
+    alert("Reward for Level " + level + " claimed 🎉");
+
+    loadRewards();
 }
 
+// INIT
 document.addEventListener("DOMContentLoaded", loadRewards);
-
 </script>
 
 </body>

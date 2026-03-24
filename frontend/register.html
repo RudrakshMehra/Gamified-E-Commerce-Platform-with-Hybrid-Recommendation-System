@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Register</title>
+<title>Register | ShopXP</title>
 
 <style>
 *{
@@ -21,16 +21,16 @@ body{
     height:100vh;
 }
 
-/* Main Container */
 .register-container{
     width:800px;
     height:520px;
     background:white;
     display:flex;
     box-shadow:0 4px 20px rgba(0,0,0,0.1);
+    border-radius:8px;
+    overflow:hidden;
 }
 
-/* Left Panel */
 .left-panel{
     width:40%;
     background:#2874f0;
@@ -43,7 +43,6 @@ body{
 
 .left-panel h1{
     font-size:28px;
-    margin-bottom:15px;
 }
 
 .left-panel p{
@@ -56,7 +55,6 @@ body{
     align-self:center;
 }
 
-/* Right Panel */
 .right-panel{
     width:60%;
     padding:50px 40px;
@@ -85,13 +83,12 @@ body{
 .error{
     color:red;
     font-size:12px;
-    margin-top:5px;
 }
 
-.terms{
-    font-size:12px;
-    color:#878787;
-    margin:15px 0;
+.success{
+    color:green;
+    font-size:13px;
+    margin-bottom:10px;
 }
 
 .register-btn{
@@ -101,7 +98,7 @@ body{
     border:none;
     cursor:pointer;
     font-size:16px;
-    margin-top:10px;
+    border-radius:5px;
 }
 
 .register-btn:hover{
@@ -136,38 +133,33 @@ body{
 
 <div class="register-container">
 
-    <!-- Left Blue Panel -->
     <div class="left-panel">
         <div>
             <h1>Looks like you're new here!</h1>
-            <p>Sign up with your details to start shopping and enjoy amazing deals.</p>
+            <p>Sign up to start shopping and earn rewards.</p>
         </div>
-
-        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135789.png" alt="register image">
+        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135789.png">
     </div>
 
-    <!-- Right White Panel -->
     <div class="right-panel">
 
         <form onsubmit="handleRegister(event)">
 
+            <div id="successMsg" class="success"></div>
+
             <div class="input-group">
-                <input type="text" id="regName" placeholder="Enter Full Name">
+                <input type="text" id="regName" placeholder="Enter Full Name" required>
                 <div id="nameError" class="error"></div>
             </div>
 
             <div class="input-group">
-                <input type="text" id="regEmail" placeholder="Enter Email">
+                <input type="email" id="regEmail" placeholder="Enter Email" required>
                 <div id="emailError" class="error"></div>
             </div>
 
             <div class="input-group">
-                <input type="password" id="regPassword" placeholder="Create Password">
+                <input type="password" id="regPassword" placeholder="Create Password" required>
                 <div id="passwordError" class="error"></div>
-            </div>
-
-            <div class="terms">
-                By continuing, you agree to Terms of Use and Privacy Policy.
             </div>
 
             <button type="submit" class="register-btn">Register</button>
@@ -203,7 +195,7 @@ function handleRegister(event){
         isValid = false;
     }
 
-    if(email === "" || !email.includes("@")){
+    if(!email.includes("@")){
         document.getElementById("emailError").innerText = "Enter valid email";
         isValid = false;
     }
@@ -215,7 +207,19 @@ function handleRegister(event){
 
     if(!isValid) return;
 
-    register(); // call main register function from script.js
+    let user = {
+        name,
+        email,
+        password: btoa(password)
+    };
+
+    localStorage.setItem("user", JSON.stringify(user));
+
+    document.getElementById("successMsg").innerText = "Registration successful! Redirecting...";
+
+    setTimeout(() => {
+        window.location.href = "login.html"; // ✅ FIXED
+    }, 1200);
 }
 </script>
 

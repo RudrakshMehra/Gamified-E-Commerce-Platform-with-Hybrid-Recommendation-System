@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My Profile - ShopEasy</title>
+<title>My Profile | ShopXP</title>
 <link rel="stylesheet" href="style.css">
 
 <style>
@@ -39,10 +39,10 @@
 
 <body>
 
-<header>
-    <div class="logo">🎮 ShopEasy</div>
+<header class="header">
+    <div class="logo">🎮 ShopXP</div>
 
-    <nav id="nav">
+    <nav id="nav" class="nav">
         <a href="index.html">Home</a>
         <a href="cart.html">Cart (<span id="cart-count">0</span>)</a>
         <a href="profile.html">Profile</a>
@@ -80,7 +80,9 @@
 </div>
 
 <footer>
-    <p>© 2026 ShopEasy. All Rights Reserved.</p>
+    <Center>
+    <p>© 2026 ShopXP. All Rights Reserved.</p>
+    </Center>
 </footer>
 
 <script src="script.js"></script>
@@ -88,17 +90,33 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-    if (!localStorage.getItem("loggedIn")) {
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    // Redirect if not logged in
+    if (!user) {
         window.location.href = "login.html";
+        return;
     }
 
-    document.getElementById("logoutBtn").addEventListener("click", logout);
+    // Load user data
+    document.getElementById("profileEmail").innerText = user.email;
+    document.getElementById("profileName").innerText =
+        user.name || user.email.split("@")[0];
 
+    // Logout
+    document.getElementById("logoutBtn").addEventListener("click", function(){
+        localStorage.removeItem("user");
+        window.location.href = "login.html";
+    });
+
+    // Load cart count
+    updateCartCount();
+
+    // Load XP system
     loadProfileLevel();
 });
 
-/* ===== PROFILE LEVEL SYSTEM ===== */
-
+/* ===== LEVEL SYSTEM ===== */
 function loadProfileLevel(){
 
     let xp = parseInt(localStorage.getItem("xp")) || 0;

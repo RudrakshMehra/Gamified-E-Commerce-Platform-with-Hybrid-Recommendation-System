@@ -1,385 +1,365 @@
-const API_URL = "http://localhost:5000/api";
-
-/* =========================
-   NAVBAR MENU
-========================= */
-function toggleMenu(){
-    const nav = document.getElementById("nav");
-    nav.classList.toggle("show");
+// =====================================
+// STORAGE HELPERS
+// =====================================
+function saveToStorage(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
 }
 
-/* =========================
-   REGISTER
-========================= */
-async function register(){
-    const name = document.getElementById("regName").value;
-    const email = document.getElementById("regEmail").value;
-    const password = document.getElementById("regPassword").value;
+function getFromStorage(key) {
+    return JSON.parse(localStorage.getItem(key));
+}
 
-    try{
-        const res = await fetch(API_URL + "/auth/register",{
-            method:"POST",
-            headers:{ "Content-Type":"application/json" },
-            body:JSON.stringify({ name,email,password })
-        });
+// =====================================
+// AUTH SYSTEM (FIXED)
+// =====================================
+function getUser() {
+    return getFromStorage("user");
+}
 
-        const data = await res.json();
+function isLoggedIn() {
+    return !!getUser();
+}
 
-        if(res.ok){
-            alert("Registration successful");
-            window.location.href = "login.html";
-        }else{
-            alert(data.message || "Registration failed");
-        }
+// REGISTER
+function register() {
 
-    }catch(err){
-        console.error(err);
-        alert("Server error");
+    const name = document.getElementById("regName")?.value.trim();
+    const email = document.getElementById("regEmail")?.value.trim();
+    const password = document.getElementById("regPassword")?.value.trim();
+
+    if (!name || !email || !password) {
+        showToast("Please fill all fields ⚠️");
+        return;
     }
+
+    const user = {
+        name: name,
+        email: email,
+        password: btoa(password)
+    };
+
+    localStorage.setItem("user", JSON.stringify(user));
+
+    showToast("Registration successful 🎉");
+
+    setTimeout(() => {
+        window.location.href = "login.html";
+    }, 1000);
 }
 
-/* =========================
-   LOGIN
-========================= */
-async function login(){
-    const email = document.getElementById("loginEmail").value;
-    const password = document.getElementById("loginPassword").value;
+// LOGIN
+function login() {
 
-    try{
-        const res = await fetch(API_URL + "/auth/login",{
-            method:"POST",
-            headers:{ "Content-Type":"application/json" },
-            body:JSON.stringify({ email,password })
-        });
+    const email = document.getElementById("loginEmail")?.value.trim();
+    const password = document.getElementById("loginPassword")?.value.trim();
 
-        const data = await res.json();
+    const user = getUser();
 
-        if(res.ok){
-            localStorage.setItem("token",data.token);
-            localStorage.setItem("loggedIn",true);
-            localStorage.setItem("user",JSON.stringify(data.user));
+    if (!user) {
+        showToast("No account found ❌");
+        return;
+    }
 
-            alert("Login successful");
+    if (user.email === email && user.password === btoa(password)) {
+
+        showToast("Login successful 🎉");
+
+        setTimeout(() => {
             window.location.href = "index.html";
-        }else{
-            alert(data.message || "Login failed");
-        }
+        }, 800);
 
-    }catch(err){
-        console.error(err);
-        alert("Server error");
+    } else {
+        showToast("Invalid credentials ❌");
     }
 }
 
-/* =========================
-   LOAD PRODUCTS
-========================= */
-async function loadProducts(){
 
-    const container = document.getElementById("products");
-    if(!container) return;
-
-    try{
-        const res = await fetch(API_URL + "/products");
-        const products = await res.json();
-
-        container.innerHTML = "";
-
-        products.forEach(product=>{
-
-            const imageURL = "http://localhost:5000/uploads/" + product.image;
-
-            container.innerHTML += `
-            <article class="product-card">
-                <img src="${imageURL}" alt="${product.name}">
-                <h3>${product.name}</h3>
-                <p class="price">₹${product.price}</p>
-                <button onclick="addToCart(${product.id},'${product.name}',${product.price})">
-                    Add to Cart
-                </button>
-            </article>`;
-        });
-
-    }catch(err){
-        console.error(err);
-    }
+function logout() {
+    localStorage.removeItem("user");
+    showToast("Logged out 👋");
+    setTimeout(() => window.location.href = "login.html", 800);
 }
 
-/* =========================
-   CART STORAGE
-========================= */
-function getCart(){
-    return JSON.parse(localStorage.getItem("cart")) || [];
+// =====================================
+// CART SYSTEM (UNIFIED)
+// =====================================
+function getCart() {
+    return getFromStorage("cart") || [];
 }
 
-function saveCart(cart){
-    localStorage.setItem("cart",JSON.stringify(cart));
+function saveCart(cart) {
+    saveToStorage("cart", cart);
 }
 
-/* =========================
-   ADD TO CART
-========================= */
-function addToCart(id,name,price){
+// ADD TO CART (used everywhere)
+function addToCart(product) {
 
     let cart = getCart();
-    const item = cart.find(p=>p.id === id);
 
-    if(item){
-        item.quantity += 1;
-    }else{
-        cart.push({
-            id,
-            name,
-            price,
-            quantity:1,
-            selected:true   // ✅ auto selected
-        });
+    let existing = cart.find(item => item.id === product.id);
+
+    if (existing) {
+        existing.qty += 1;
+    } else {
+        cart.push({ ...product, qty: 1 });
     }
 
     saveCart(cart);
     updateCartCount();
-    alert("Added to cart");
+
+    // XP reward
+    addXP(10);
+
+    showToast(product.name + " added to cart 🎉");
 }
 
-/* =========================
-   CART COUNT
-========================= */
-function updateCartCount(){
-    const cart = getCart();
-    const count = cart.reduce((sum,item)=>sum + item.quantity,0);
-    const el = document.getElementById("cart-count");
-    if(el) el.innerText = count;
+// =====================================
+// CART COUNT
+// =====================================
+function updateCartCount() {
+    let cart = getCart();
+    let countEl = document.getElementById("cart-count");
+
+    if (!countEl) return;
+
+    let total = cart.reduce((sum, item) => sum + item.qty, 0);
+    countEl.innerText = total;
 }
 
-/* =========================
-   LOAD CART WITH CHECKBOXES
-========================= */
-function loadCart(){
+// =====================================
+// DISPLAY CART
+// =====================================
+function displayCart() {
+
+    let cart = getCart();
 
     const container = document.getElementById("cart-items");
-    if(!container) return;
+    if (!container) return;
 
-    const cart = getCart();
     container.innerHTML = "";
 
-    if(cart.length === 0){
-        container.innerHTML = "<h3>Your cart is empty</h3>";
-        calculateTotal();
+    if (cart.length === 0) {
+        container.innerHTML = "<p>Your cart is empty 🛒</p>";
         return;
     }
 
-    cart.forEach(item=>{
+    let total = 0;
+    let mrp = 0;
 
-        container.innerHTML += `
-        <div class="cart-item-box">
+    cart.forEach((item, index) => {
 
-            <!-- SELECT CHECKBOX -->
-            <input type="checkbox"
-                   onchange="toggleItem(${item.id})"
-                   ${item.selected ? "checked" : ""}>
+        let itemTotal = item.price * item.qty;
+        total += itemTotal;
+        mrp += item.price * 1.2 * item.qty;
+
+        let div = document.createElement("div");
+        div.className = "cart-item-box";
+
+        div.innerHTML = `
+            <div class="cart-item-left">
+                <img src="${item.image}">
+            </div>
 
             <div class="cart-item-center">
                 <h4>${item.name}</h4>
                 <p>₹${item.price}</p>
 
                 <div class="qty-controls">
-                    <button onclick="changeQty(${item.id},-1)">-</button>
-                    ${item.quantity}
-                    <button onclick="changeQty(${item.id},1)">+</button>
+                    <button onclick="changeQty(${index}, -1)">-</button>
+                    <span>${item.qty}</span>
+                    <button onclick="changeQty(${index}, 1)">+</button>
                 </div>
+
+                <button onclick="removeItem(${index})" class="remove-btn">
+                    REMOVE
+                </button>
             </div>
+        `;
 
-        </div>`;
+        container.appendChild(div);
     });
 
-    calculateTotal();
-}
+    let discount = Math.round(mrp - total);
 
-/* =========================
-   TOGGLE SINGLE ITEM
-========================= */
-function toggleItem(id){
-
-    let cart = getCart();
-    const item = cart.find(p=>p.id === id);
-
-    if(!item) return;
-
-    item.selected = !item.selected;
-
-    saveCart(cart);
-    calculateTotal();
-}
-
-/* =========================
-   SELECT / DESELECT ALL
-========================= */
-function toggleAll(checkbox){
-
-    let cart = getCart();
-
-    cart.forEach(item=>{
-        item.selected = checkbox.checked;
-    });
-
-    saveCart(cart);
-    loadCart();
-}
-
-/* =========================
-   CALCULATE TOTAL (SELECTED ONLY)
-========================= */
-function calculateTotal(){
-
-    const cart = getCart();
-
-    let total = 0;
-
-    cart.forEach(item=>{
-        if(item.selected){
-            total += item.price * item.quantity;
-        }
-    });
-
-    document.getElementById("mrp-total").innerText = total;
     document.getElementById("cart-total").innerText = total;
+    document.getElementById("mrp-total").innerText = Math.round(mrp);
+    document.getElementById("discount-total").innerText = discount;
+    document.getElementById("save-amount").innerText = discount;
 }
 
-/* =========================
-   CHANGE QUANTITY
-========================= */
-function changeQty(id,amount){
+// CATEGORY FILTER
+function filterProducts(category, event) {
 
+    let products = document.querySelectorAll(".product-card");
+
+    products.forEach(product => {
+        let cat = product.getAttribute("data-category");
+
+        if (category === "all" || cat === category) {
+            product.style.display = "block";
+        } else {
+            product.style.display = "none";
+        }
+    });
+
+    // Highlight active category
+    document.querySelectorAll(".category").forEach(c => {
+        c.classList.remove("active");
+    });
+
+    event.currentTarget.classList.add("active");
+
+    // Scroll to products
+    document.getElementById("products").scrollIntoView({
+        behavior: "smooth"
+    });
+}
+
+
+// =====================================
+// SUGGESTED PRODUCTS (SMART UI)
+// =====================================
+function loadSuggestions() {
+
+    const container = document.getElementById("suggested-products");
+    if (!container) return;
+
+    // Sample products (you can expand later)
+    let suggestions = [
+        { id: 101, name: "Smart Watch", price: 3000, image: "https://via.placeholder.com/200" },
+        { id: 102, name: "Gaming Mouse", price: 1500, image: "https://via.placeholder.com/200" },
+        { id: 103, name: "Bluetooth Speaker", price: 2500, image: "https://via.placeholder.com/200" },
+        { id: 104, name: "Power Bank", price: 1200, image: "https://via.placeholder.com/200" },
+        { id: 105, name: "Wireless Earbuds", price: 2200, image: "https://via.placeholder.com/200" },
+        { id: 106, name: "Laptop Stand", price: 900, image: "https://via.placeholder.com/200" }
+    ];
+
+    // Shuffle (random suggestions)
+    suggestions.sort(() => 0.5 - Math.random());
+
+    // Clear container
+    container.innerHTML = "";
+
+    // Show only 4 products
+    suggestions.slice(0, 4).forEach(product => {
+
+        let div = document.createElement("div");
+        div.className = "product-card";
+
+        div.innerHTML = `
+            <img src="${product.image}">
+            <h3>${product.name}</h3>
+            <p class="price">₹${product.price}</p>
+            <div class="reward">🎯 Earn ${Math.floor(product.price / 100)} Points</div>
+            <button onclick='addToCart(${JSON.stringify(product)})'>
+                Add to Cart
+            </button>
+        `;
+
+        container.appendChild(div);
+    });
+} 
+
+
+// =====================================
+// CART ACTIONS
+// =====================================
+function changeQty(index, delta) {
     let cart = getCart();
-    const item = cart.find(p=>p.id === id);
 
-    if(!item) return;
+    cart[index].qty += delta;
 
-    item.quantity += amount;
-
-    if(item.quantity <= 0){
-        cart = cart.filter(p=>p.id !== id);
+    if (cart[index].qty <= 0) {
+        cart.splice(index, 1);
     }
 
     saveCart(cart);
-    loadCart();
+    displayCart();
     updateCartCount();
 }
 
-/* =========================
-   CHECKOUT (SELECTED ITEMS ONLY)
-========================= */
-async function checkout(){
+function removeItem(index) {
+    let cart = getCart();
+    cart.splice(index, 1);
+    saveCart(cart);
+    displayCart();
+    updateCartCount();
+}
 
-    const token = localStorage.getItem("token");
+// =====================================
+// CHECKOUT + XP
+// =====================================
+function checkout() {
 
-    if(!token){
-        alert("Please login first");
-        window.location.href="login.html";
+    let cart = getCart();
+
+    if (cart.length === 0) {
+        showToast("Cart is empty ⚠️");
         return;
     }
 
-    const cart = getCart().filter(item => item.selected);
+    showToast("Order placed 🎉");
 
-    if(cart.length === 0){
-        alert("Select items to buy");
-        return;
+    // Give XP
+    addXP(100);
+
+    saveCart([]);
+    displayCart();
+    updateCartCount();
+}
+
+// =====================================
+// XP SYSTEM (CONNECTED 🔥)
+// =====================================
+function getXP() {
+    return parseInt(localStorage.getItem("xp")) || 0;
+}
+
+function addXP(amount) {
+    let xp = getXP();
+    xp += amount;
+    localStorage.setItem("xp", xp);
+}
+
+// =====================================
+// TOAST
+// =====================================
+function showToast(msg) {
+    let toast = document.createElement("div");
+    toast.className = "toast";
+    toast.innerText = msg;
+    document.body.appendChild(toast);
+
+    setTimeout(() => toast.remove(), 2000);
+}
+
+// =====================================
+// MENU
+// =====================================
+function toggleMenu() {
+    document.getElementById("nav")?.classList.toggle("active");
+}
+
+// =====================================
+// INIT
+// =====================================
+document.addEventListener("DOMContentLoaded", () => {
+
+    updateCartCount();
+
+    if (document.getElementById("cart-items")) {
+        displayCart();
     }
 
-    try{
-        const res = await fetch(API_URL + "/orders",{
-            method:"POST",
-            headers:{
-                "Content-Type":"application/json",
-                "Authorization":"Bearer " + token
-            },
-            body:JSON.stringify({ items:cart })
-        });
+    loadSuggestions();
 
-        const data = await res.json();
-
-        if(res.ok){
-            alert("Order placed successfully");
-
-            // remove only purchased items
-            let remaining = getCart().filter(item => !item.selected);
-            saveCart(remaining);
-
-            window.location.href="index.html";
-        }else{
-            alert(data.message);
+    // Protect pages
+    if (
+        window.location.pathname.includes("profile.html") ||
+        window.location.pathname.includes("reward.html")
+    ) {
+        if (!isLoggedIn()) {
+            window.location.href = "login.html";
         }
-
-    }catch(err){
-        console.error(err);
     }
-}
-
-/* =========================
-   PROFILE
-========================= */
-function loadProfile(){
-
-    const user = JSON.parse(localStorage.getItem("user"));
-    if(!user) return;
-
-    const name = document.getElementById("profileName");
-    const email = document.getElementById("profileEmail");
-
-    if(name) name.innerText = user.name;
-    if(email) email.innerText = user.email;
-}
-
-function logout(){
-    localStorage.removeItem("token");
-    localStorage.removeItem("loggedIn");
-    localStorage.removeItem("user");
-    window.location.href="login.html";
-}
-
-/* =========================
-   PAGE LOAD
-========================= */
-document.addEventListener("DOMContentLoaded",()=>{
-
-    updateCartCount();
-    loadProducts();
-    loadCart();
-    loadProfile();
-
 });
-
-
-async function sendContact(){
-
-    const name = document.getElementById("contactName").value;
-    const email = document.getElementById("contactEmail").value;
-    const message = document.getElementById("contactMessage").value;
-
-    try{
-
-        const res = await fetch("http://localhost:5000/api/contact",{
-            method:"POST",
-            headers:{
-                "Content-Type":"application/json"
-            },
-            body:JSON.stringify({
-                name,
-                email,
-                message
-            })
-        });
-
-        const data = await res.json();
-
-        if(res.ok){
-            alert("Message sent successfully!");
-        }else{
-            alert(data.message);
-        }
-
-    }catch(err){
-        console.error(err);
-        alert("Server error");
-    }
-}

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>About Us</title>
+<title>About Us | ShopXP</title>
 
 <style>
 body {
@@ -20,6 +20,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .navbar h2 {
@@ -31,6 +32,11 @@ body {
     text-decoration: none;
     margin-left: 20px;
     font-weight: bold;
+    transition: 0.3s;
+}
+
+.navbar a:hover {
+    text-decoration: underline;
 }
 
 /* Section */
@@ -41,6 +47,7 @@ body {
     background: white;
     padding: 30px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border-radius: 8px;
 }
 
 .section h1 {
@@ -65,9 +72,10 @@ body {
 .contact-form input,
 .contact-form textarea {
     margin-bottom: 15px;
-    padding: 10px;
+    padding: 12px;
     border: 1px solid #ccc;
     font-size: 14px;
+    border-radius: 5px;
 }
 
 .contact-form textarea {
@@ -82,6 +90,8 @@ body {
     color: white;
     font-size: 16px;
     cursor: pointer;
+    border-radius: 5px;
+    transition: 0.3s;
 }
 
 .contact-form button:hover {
@@ -95,6 +105,23 @@ body {
     background: #172337;
     color: white;
     margin-top: 40px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 600px) {
+    .navbar {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .navbar div {
+        margin-top: 10px;
+    }
+
+    .navbar a {
+        display: inline-block;
+        margin: 10px;
+    }
 }
 </style>
 </head>
@@ -136,9 +163,9 @@ body {
         <h2>Contact Us</h2>
 
         <form class="contact-form" onsubmit="sendMessage(event)">
-            <input type="text" placeholder="Your Name" required>
-            <input type="email" placeholder="Your Email" required>
-            <textarea placeholder="Your Message" required></textarea>
+            <input type="text" name="name" placeholder="Your Name" required>
+            <input type="email" name="email" placeholder="Your Email" required>
+            <textarea name="message" placeholder="Your Message" required></textarea>
             <button type="submit">Send Message</button>
         </form>
     </div>
@@ -146,13 +173,17 @@ body {
 
 <!-- Footer -->
 <div class="footer">
-    © 2026 MyStore | All Rights Reserved
+    © 2026 ShopXP | All Rights Reserved
 </div>
 
 <script>
 function sendMessage(event) {
     event.preventDefault();
+
     alert("Thank you! Your message has been sent.");
+
+    // Reset form after submit
+    document.querySelector(".contact-form").reset();
 }
 </script>
 

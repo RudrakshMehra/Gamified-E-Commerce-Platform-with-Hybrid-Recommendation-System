@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login</title>
+<title>Login | ShopXP</title>
 
 <style>
 * {
@@ -28,6 +28,8 @@ body {
     background: white;
     display: flex;
     box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 /* Left Panel */
@@ -43,7 +45,6 @@ body {
 
 .left-panel h1 {
     font-size: 28px;
-    margin-bottom: 15px;
 }
 
 .left-panel p {
@@ -82,6 +83,14 @@ body {
     border-bottom: 2px solid #2874f0;
 }
 
+/* Error Message */
+.error {
+    color: red;
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+
+/* Button */
 .login-btn {
     background: #fb641b;
     color: white;
@@ -89,7 +98,7 @@ body {
     border: none;
     cursor: pointer;
     font-size: 16px;
-    margin-top: 10px;
+    border-radius: 5px;
 }
 
 .login-btn:hover {
@@ -115,12 +124,7 @@ body {
         flex-direction: column;
     }
 
-    .left-panel {
-        width: 100%;
-        text-align: center;
-    }
-
-    .right-panel {
+    .left-panel, .right-panel {
         width: 100%;
     }
 }
@@ -131,27 +135,29 @@ body {
 
 <div class="login-container">
 
-    <!-- Left Blue Panel -->
+    <!-- Left Panel -->
     <div class="left-panel">
         <div>
             <h1>Login</h1>
             <p>Get access to your Orders,<br>Wishlist and Recommendations</p>
         </div>
 
-        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="login image">
+        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="login">
     </div>
 
-    <!-- Right White Panel -->
+    <!-- Right Panel -->
     <div class="right-panel">
 
         <form onsubmit="handleLogin(event)">
+            
+            <div class="error" id="error-msg"></div>
 
             <div class="input-group">
-                <input type="text" id="loginEmail" placeholder="Enter Email">
+                <input type="email" id="loginEmail" placeholder="Enter Email" required>
             </div>
 
             <div class="input-group">
-                <input type="password" id="loginPassword" placeholder="Enter Password">
+                <input type="password" id="loginPassword" placeholder="Enter Password" required>
             </div>
 
             <button type="submit" class="login-btn">Login</button>
@@ -166,13 +172,36 @@ body {
 
 </div>
 
-<!-- Connect Your Existing Script -->
 <script src="script.js"></script>
 
 <script>
 function handleLogin(event){
     event.preventDefault();
-    login(); // Calls login() from your script.js
+
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value.trim();
+    const errorBox = document.getElementById("error-msg");
+
+    // Basic validation
+    if(!email.includes("@")) {
+        errorBox.innerText = "Enter a valid email";
+        return;
+    }
+
+    if(password.length < 4) {
+        errorBox.innerText = "Password must be at least 4 characters";
+        return;
+    }
+
+    // Dummy login (you can replace with real backend later)
+    localStorage.setItem("user", JSON.stringify({ email }));
+
+    errorBox.style.color = "green";
+    errorBox.innerText = "Login successful! Redirecting...";
+
+    setTimeout(() => {
+        window.location.href = "index.html";
+    }, 1000);
 }
 </script>
 
