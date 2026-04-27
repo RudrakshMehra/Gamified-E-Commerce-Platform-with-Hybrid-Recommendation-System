@@ -217,48 +217,130 @@ function filterProducts(category, event) {
 
 
 // =====================================
-// SUGGESTED PRODUCTS (SMART UI)
+// SUGGESTED PRODUCTS (ML-POWERED)
 // =====================================
-function loadSuggestions() {
+
+// Maps ML subcategory names → display product info
+const SUBCATEGORY_PRODUCTS = {
+    "Laptop":       { id: 201, name: "Laptop",            price: 55000, image: "https://via.placeholder.com/200?text=Laptop" },
+    "Mobile":       { id: 202, name: "Smartphone",        price: 22000, image: "https://via.placeholder.com/200?text=Mobile" },
+    "Accessories":  { id: 203, name: "Wireless Earbuds",  price: 2200,  image: "https://via.placeholder.com/200?text=Accessories" },
+    "Men":          { id: 204, name: "Men's Jacket",       price: 2500,  image: "https://via.placeholder.com/200?text=Men" },
+    "Women":        { id: 205, name: "Women's Dress",      price: 1800,  image: "https://via.placeholder.com/200?text=Women" },
+    "Sports":       { id: 206, name: "Sports Shoes",       price: 3000,  image: "https://via.placeholder.com/200?text=Sports" },
+    "Furniture":    { id: 207, name: "Office Chair",       price: 12000, image: "https://via.placeholder.com/200?text=Furniture" },
+    "Kitchen":      { id: 208, name: "Microwave",          price: 7000,  image: "https://via.placeholder.com/200?text=Kitchen" },
+    "Decor":        { id: 209, name: "Wall Art Set",       price: 1500,  image: "https://via.placeholder.com/200?text=Decor" },
+};
+
+// Fallback shown when user is not logged in or not in the ML dataset
+const FALLBACK_SUGGESTIONS = [
+    { id: 301, name: "Smart Watch",       price: 5000,  image: "https://via.placeholder.com/200?text=Watch" },
+    { id: 302, name: "Bluetooth Speaker", price: 2500,  image: "https://via.placeholder.com/200?text=Speaker" },
+    { id: 303, name: "Power Bank",        price: 1200,  image: "https://via.placeholder.com/200?text=PowerBank" },
+    { id: 304, name: "Wireless Earbuds",  price: 2200,  image: "https://via.placeholder.com/200?text=Earbuds" },
+];
+
+async function loadSuggestions() {
 
     const container = document.getElementById("suggested-products");
     if (!container) return;
 
-    // Sample products (you can expand later)
-    let suggestions = [
-        { id: 101, name: "Smart Watch", price: 3000, image: "https://via.placeholder.com/200" },
-        { id: 102, name: "Gaming Mouse", price: 1500, image: "https://via.placeholder.com/200" },
-        { id: 103, name: "Bluetooth Speaker", price: 2500, image: "https://via.placeholder.com/200" },
-        { id: 104, name: "Power Bank", price: 1200, image: "https://via.placeholder.com/200" },
-        { id: 105, name: "Wireless Earbuds", price: 2200, image: "https://via.placeholder.com/200" },
-        { id: 106, name: "Laptop Stand", price: 900, image: "https://via.placeholder.com/200" }
-    ];
+    // Show loading skeleton
+    container.innerHTML = `
+        <div class="suggestion-loading">
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+        </div>
+    `;
 
-    // Shuffle (random suggestions)
-    suggestions.sort(() => 0.5 - Math.random());
+    const user = getUser();
 
-    // Clear container
+    // If not logged in or no user_id → show fallback
+    if (!user || !user.user_id) {
+        renderSuggestions(FALLBACK_SUGGESTIONS, false);
+        return;
+    }
+
+    try {
+        const res = await fetch(
+            `http://localhost:5000/api/recommendations?user_id=${user.user_id}&top_n=4`
+        );
+
+        if (!res.ok) throw new Error("API error: " + res.status);
+
+        const data = await res.json();
+
+        if (!data.recommendations || data.recommendations.length === 0) {
+            renderSuggestions(FALLBACK_SUGGESTIONS, false);
+            return;
+        }
+
+        // Map subcategory names → product cards
+        const products = data.recommendations
+            .map(rec => {
+                const product = SUBCATEGORY_PRODUCTS[rec.subcategory];
+                if (!product) return null;
+                return { ...product, mlScore: rec.score, subcategory: rec.subcategory };
+            })
+            .filter(Boolean);
+
+        if (products.length === 0) {
+            renderSuggestions(FALLBACK_SUGGESTIONS, false);
+            return;
+        }
+
+        renderSuggestions(products, true);
+
+    } catch (err) {
+        console.warn("[ShopXP] ML recommendations unavailable, using fallback.", err);
+        renderSuggestions(FALLBACK_SUGGESTIONS, false);
+    }
+}
+
+function renderSuggestions(products, isPersonalized) {
+
+    const container = document.getElementById("suggested-products");
+    if (!container) return;
+
+    // Update section heading to reflect personalisation
+    const heading = document.querySelector(".suggest-section h2");
+    if (heading) {
+        heading.innerHTML = isPersonalized
+            ? "🤖 Recommended For You <span class='ml-badge'>AI-Powered</span>"
+            : "🔥 Suggested For You";
+    }
+
     container.innerHTML = "";
 
-    // Show only 4 products
-    suggestions.slice(0, 4).forEach(product => {
-
+    products.forEach(product => {
         let div = document.createElement("div");
         div.className = "product-card";
 
+        const matchLabel = product.subcategory
+            ? `<div class="reward">🏷️ ${product.subcategory}</div>`
+            : `<div class="reward">🎯 Earn ${Math.floor(product.price / 100)} Points</div>`;
+
         div.innerHTML = `
-            <img src="${product.image}">
+            <img src="${product.image}" alt="${product.name}">
             <h3>${product.name}</h3>
-            <p class="price">₹${product.price}</p>
-            <div class="reward">🎯 Earn ${Math.floor(product.price / 100)} Points</div>
-            <button onclick='addToCart(${JSON.stringify(product)})'>
+            <p class="price">₹${product.price.toLocaleString("en-IN")}</p>
+            ${matchLabel}
+            <button onclick='addToCart(${JSON.stringify({
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                image: product.image
+            })})'>
                 Add to Cart
             </button>
         `;
 
         container.appendChild(div);
     });
-} 
+}
 
 
 // =====================================

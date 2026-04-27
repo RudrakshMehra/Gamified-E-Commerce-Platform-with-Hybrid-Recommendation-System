@@ -175,33 +175,66 @@ body {
 <script src="script.js"></script>
 
 <script>
-function handleLogin(event){
+async function handleLogin(event){
     event.preventDefault();
 
-    const email = document.getElementById("loginEmail").value.trim();
+    const email    = document.getElementById("loginEmail").value.trim();
     const password = document.getElementById("loginPassword").value.trim();
     const errorBox = document.getElementById("error-msg");
+    const btn      = event.target.querySelector("button[type=submit]");
+
+    errorBox.style.color = "red";
 
     // Basic validation
-    if(!email.includes("@")) {
+    if (!email.includes("@")) {
         errorBox.innerText = "Enter a valid email";
         return;
     }
 
-    if(password.length < 4) {
+    if (password.length < 4) {
         errorBox.innerText = "Password must be at least 4 characters";
         return;
     }
 
-    // Dummy login (you can replace with real backend later)
-    localStorage.setItem("user", JSON.stringify({ email }));
+    // ✅ Real backend call
+    btn.disabled    = true;
+    btn.textContent = "Logging in...";
 
-    errorBox.style.color = "green";
-    errorBox.innerText = "Login successful! Redirecting...";
+    try {
+        const res = await fetch("http://localhost:5000/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+        });
 
-    setTimeout(() => {
-        window.location.href = "index.html";
-    }, 1000);
+        const data = await res.json();
+
+        if (!res.ok) {
+            errorBox.innerText  = data.message || "Invalid email or password.";
+            btn.disabled    = false;
+            btn.textContent = "Login";
+            return;
+        }
+
+        // ✅ Store user_id so ML recommendations are personalized
+        localStorage.setItem("user", JSON.stringify({
+            user_id: data.user?.id    || data.id,
+            name:    data.user?.name  || data.name,
+            email:   data.user?.email || email,
+            token:   data.token
+        }));
+
+        errorBox.style.color = "green";
+        errorBox.innerText   = "Login successful! Redirecting...";
+
+        setTimeout(() => { window.location.href = "index.html"; }, 1000);
+
+    } catch (err) {
+        console.error("[ShopXP] Login error:", err);
+        errorBox.innerText  = "Cannot reach server. Is the backend running on port 5000?";
+        btn.disabled    = false;
+        btn.textContent = "Login";
+    }
 }
 </script>
 
