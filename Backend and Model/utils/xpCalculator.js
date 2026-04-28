@@ -8,7 +8,7 @@ function calculateXP(amount) {
 function calculateLevel(xp) {
   // simple leveling formula
   // level increases every 100 XP
-  return Math.floor(xp / 100) + 1;
+  return Math.floor(xp / 500) + 1;
 }
 
 function calculateCoins(amount) {
