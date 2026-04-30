@@ -1,5 +1,6 @@
 const express = require("express");
 const pool = require("../db");
+const authMiddleware = require("../middleware/auth");
 const {
   calculateXP,
   calculateLevel,
@@ -9,15 +10,16 @@ const {
 const router = express.Router();
 
 ////////////////////////////////////
-// ✅ PLACE ORDER + XP SYSTEM
+// PLACE ORDER + XP SYSTEM
 ////////////////////////////////////
-router.post("/place", async (req, res) => {
+router.post("/place", authMiddleware, async (req, res) => {
   const client = await pool.connect();
 
   try {
-    const { user_id, items } = req.body;
+    const user_id = req.user.id; // from JWT — not from body (security fix)
+    const { items } = req.body;
 
-    if (!user_id || !items || items.length === 0) {
+    if (!items || items.length === 0) {
       return res.status(400).json({ message: "Invalid order data" });
     }
 
@@ -32,10 +34,10 @@ router.post("/place", async (req, res) => {
       );
 
       if (product.rows.length === 0) {
-        throw new Error("Product not found");
+        throw new Error("Product not found: " + item.product_id);
       }
 
-      totalAmount += product.rows[0].price * item.quantity;
+      totalAmount += Number(product.rows[0].price) * item.quantity;
     }
 
     const orderResult = await client.query(
@@ -53,8 +55,8 @@ router.post("/place", async (req, res) => {
       );
     }
 
-    // 🎮 GAMIFICATION
-    const xpEarned = calculateXP(totalAmount);
+    // Gamification
+    const xpEarned    = calculateXP(totalAmount);
     const coinsEarned = calculateCoins(totalAmount);
 
     const userData = await client.query(
@@ -62,7 +64,7 @@ router.post("/place", async (req, res) => {
       [user_id]
     );
 
-    const newXP = userData.rows[0].xp + xpEarned;
+    const newXP    = userData.rows[0].xp + xpEarned;
     const newLevel = calculateLevel(newXP);
     const newCoins = userData.rows[0].coins + coinsEarned;
 
@@ -71,12 +73,16 @@ router.post("/place", async (req, res) => {
       [newXP, newLevel, newCoins, user_id]
     );
 
+    // Clear the user's DB cart after checkout
+    await client.query("DELETE FROM cart WHERE user_id=$1", [user_id]);
+
     await client.query("COMMIT");
 
     res.json({
       message: "Order placed successfully",
       xpEarned,
       coinsEarned,
+      newXP,      // fix: was missing, frontend needs this
       newLevel,
     });
 

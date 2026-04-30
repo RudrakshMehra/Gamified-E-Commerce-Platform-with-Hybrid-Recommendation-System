@@ -6,15 +6,18 @@ const jwt = require("jsonwebtoken");
 const router = express.Router();
 
 //////////////////////////
-// ✅ REGISTER
+// REGISTER
 //////////////////////////
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // check user exists
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
     const userCheck = await pool.query(
-      "SELECT * FROM users WHERE email=$1",
+      "SELECT id FROM users WHERE email=$1",
       [email]
     );
 
@@ -22,11 +25,9 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // 🔐 hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // insert user with gamification defaults
     const newUser = await pool.query(
       `INSERT INTO users(name,email,password,xp,level,coins)
        VALUES($1,$2,$3,$4,$5,$6)
@@ -34,9 +35,19 @@ router.post("/register", async (req, res) => {
       [name, email, hashedPassword, 0, 1, 0]
     );
 
+    const user = newUser.rows[0];
+
+    // Return a JWT so the frontend can auto-login after registration
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
     res.json({
       message: "Registration successful",
-      user: newUser.rows[0],
+      token,
+      user,
     });
 
   } catch (err) {
@@ -46,11 +57,15 @@ router.post("/register", async (req, res) => {
 });
 
 //////////////////////////
-// ✅ LOGIN (with JWT)
+// LOGIN
 //////////////////////////
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
 
     const result = await pool.query(
       "SELECT * FROM users WHERE email=$1",
@@ -63,22 +78,20 @@ router.post("/login", async (req, res) => {
 
     const user = result.rows[0];
 
-    // compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
-    // 🔑 CREATE JWT TOKEN
     const token = jwt.sign(
-      { id: user.id, email: user.email }, // payload
-      process.env.JWT_SECRET,            // secret from .env
-      { expiresIn: "7d" }                // token valid for 7 days
+      { id: user.id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
     );
 
     res.json({
       message: "Login successful",
-      token, // send token to frontend
+      token,
       user: {
         id: user.id,
         name: user.name,

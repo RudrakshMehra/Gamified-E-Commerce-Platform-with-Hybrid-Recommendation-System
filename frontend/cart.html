@@ -12,7 +12,7 @@ body {
     background: #f1f3f6;
 }
 
-/* Navbar */
+/* ── Navbar ──────────────────────────────────────────────────────────── */
 .navbar {
     background: #2874f0;
     color: white;
@@ -22,22 +22,11 @@ body {
     align-items: center;
     flex-wrap: wrap;
 }
+.navbar h2 { margin: 0; }
+.navbar a { color: white; text-decoration: none; font-weight: bold; }
+.navbar a:hover { text-decoration: underline; }
 
-.navbar h2 {
-    margin: 0;
-}
-
-.navbar a {
-    color: white;
-    text-decoration: none;
-    font-weight: bold;
-}
-
-.navbar a:hover {
-    text-decoration: underline;
-}
-
-/* Main Layout */
+/* ── Layout ──────────────────────────────────────────────────────────── */
 .cart-container {
     width: 90%;
     max-width: 1200px;
@@ -46,7 +35,7 @@ body {
     gap: 20px;
 }
 
-/* Left Section */
+/* ── Left panel ──────────────────────────────────────────────────────── */
 .cart-left {
     flex: 2;
     background: white;
@@ -54,51 +43,76 @@ body {
     border-radius: 8px;
 }
 
-/* Empty Cart */
-.empty-cart {
-    text-align: center;
-    padding: 40px;
-    color: #777;
+/* ── Skeleton loading ────────────────────────────────────────────────── */
+.skeleton-item {
+    display: flex;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid #f0f0f0;
+    animation: shimmer 1.4s infinite;
+}
+.sk-img  { width: 120px; height: 120px; background: #e0e0e0; border-radius: 6px; flex-shrink: 0; }
+.sk-lines { flex: 1; display: flex; flex-direction: column; gap: 10px; padding-top: 8px; }
+.sk-line  { height: 14px; background: #e0e0e0; border-radius: 4px; }
+.sk-line.short { width: 40%; }
+
+@keyframes shimmer {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.5; }
 }
 
-/* Item Box */
+/* ── Empty / error states ────────────────────────────────────────────── */
+.empty-cart {
+    text-align: center;
+    padding: 60px 20px;
+    color: #777;
+    display: none;
+}
+.empty-cart a {
+    display: inline-block;
+    margin-top: 16px;
+    padding: 10px 24px;
+    background: #2874f0;
+    color: white;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+/* ── Cart item ────────────────────────────────────────────────────────── */
 .cart-item-box {
     display: flex;
     padding: 15px 0;
     border-bottom: 1px solid #ddd;
     align-items: center;
+    gap: 16px;
 }
-
 .cart-item-left img {
     width: 120px;
     height: 120px;
     object-fit: contain;
+    flex-shrink: 0;
 }
+.cart-item-center { flex: 1; }
+.cart-item-center h4 { margin: 0 0 6px; font-size: 15px; }
+.item-price { font-size: 17px; font-weight: bold; color: #212121; margin: 0 0 4px; }
+.item-mrp   { font-size: 13px; color: #878787; text-decoration: line-through; margin: 0 0 2px; }
+.item-disc  { font-size: 13px; color: #388e3c; margin: 0 0 10px; }
 
-.cart-item-center {
-    margin-left: 20px;
-}
-
-.cart-item-center h4 {
-    margin: 0 0 8px 0;
-}
-
-.qty-controls {
-    margin: 10px 0;
-}
-
+.qty-controls { display: flex; align-items: center; gap: 8px; margin: 10px 0; }
 .qty-controls button {
-    padding: 5px 12px;
-    margin: 0 5px;
-    cursor: pointer;
+    width: 32px; height: 32px;
     border: 1px solid #ccc;
     background: white;
     border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
 }
-
-.qty-controls button:hover {
-    background: #f0f0f0;
-}
+.qty-controls button:hover { background: #f0f0f0; }
+.qty-controls .qty-display { min-width: 28px; text-align: center; font-weight: bold; }
 
 .remove-btn {
     background: none;
@@ -106,76 +120,82 @@ body {
     color: #2874f0;
     font-weight: bold;
     cursor: pointer;
+    font-size: 13px;
+    padding: 0;
 }
+.remove-btn:hover { text-decoration: underline; }
 
-.remove-btn:hover {
-    text-decoration: underline;
-}
-
-/* Right Section */
+/* ── Right panel ─────────────────────────────────────────────────────── */
 .cart-right {
     flex: 1;
     background: white;
     padding: 20px;
     height: fit-content;
     border-radius: 8px;
+    position: sticky;
+    top: 20px;
 }
-
-.price-title {
-    font-weight: bold;
-    margin-bottom: 15px;
-    color: #878787;
-}
-
-.price-row {
-    display: flex;
-    justify-content: space-between;
-    margin: 10px 0;
-}
-
-.total-row {
-    border-top: 1px dashed #ccc;
-    padding-top: 10px;
-    font-weight: bold;
-}
+.price-title { font-weight: bold; margin-bottom: 15px; color: #878787; }
+.price-row   { display: flex; justify-content: space-between; margin: 10px 0; font-size: 15px; }
+.total-row   { border-top: 1px dashed #ccc; padding-top: 10px; font-weight: bold; font-size: 16px; }
+.savings-msg { color: #388e3c; font-size: 14px; margin-top: 10px; }
 
 .checkout-btn {
     margin-top: 20px;
     width: 100%;
-    padding: 12px;
+    padding: 13px;
     background: #fb641b;
     border: none;
     color: white;
     font-size: 16px;
+    font-weight: bold;
     cursor: pointer;
     border-radius: 5px;
-    transition: 0.3s;
+    transition: 0.2s;
+}
+.checkout-btn:hover    { background: #e55b14; }
+.checkout-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Order success overlay ────────────────────────────────────────────── */
+.order-success {
+    display: none;
+    text-align: center;
+    padding: 40px 20px;
+    color: #333;
+}
+.order-success .tick { font-size: 56px; margin-bottom: 16px; }
+.order-success h2    { color: #388e3c; margin-bottom: 8px; }
+.order-success p     { color: #666; margin-bottom: 20px; font-size: 15px; }
+.order-success a {
+    display: inline-block;
+    padding: 10px 28px;
+    background: #2874f0;
+    color: white;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: bold;
 }
 
-.checkout-btn:hover {
-    background: #e55b14;
+/* ── Toast ───────────────────────────────────────────────────────────── */
+.toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: #212121; color: white;
+    padding: 12px 20px; border-radius: 24px;
+    font-size: 14px; z-index: 999;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
 
-/* Responsive */
+/* ── Responsive ──────────────────────────────────────────────────────── */
 @media(max-width: 768px) {
-    .cart-container {
-        flex-direction: column;
-    }
-
-    .navbar {
-        flex-direction: column;
-        text-align: center;
-    }
-
-    .navbar a {
-        margin-top: 10px;
-    }
+    .cart-container  { flex-direction: column; }
+    .navbar          { flex-direction: column; text-align: center; }
+    .navbar a        { margin-top: 10px; }
+    .cart-right      { position: static; }
 }
 </style>
 </head>
 <body>
 
-<!-- Navbar -->
 <div class="navbar">
     <h2>My Cart</h2>
     <a href="index.html">Continue Shopping</a>
@@ -183,56 +203,348 @@ body {
 
 <div class="cart-container">
 
-    <!-- LEFT SIDE -->
+    <!-- LEFT: items list -->
     <div class="cart-left">
+        <!-- Skeleton (shown while loading) -->
+        <div id="cart-skeleton">
+            <div class="skeleton-item">
+                <div class="sk-img"></div>
+                <div class="sk-lines">
+                    <div class="sk-line"></div>
+                    <div class="sk-line short"></div>
+                    <div class="sk-line short"></div>
+                </div>
+            </div>
+            <div class="skeleton-item">
+                <div class="sk-img"></div>
+                <div class="sk-lines">
+                    <div class="sk-line"></div>
+                    <div class="sk-line short"></div>
+                    <div class="sk-line short"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real items (injected by JS) -->
         <div id="cart-items"></div>
 
-        <!-- Empty message -->
-        <div id="empty-cart" class="empty-cart" style="display:none;">
-            🛒 Your cart is empty
+        <!-- Empty state -->
+        <div id="empty-cart" class="empty-cart">
+            🛒 Your cart is empty<br>
+            <a href="products.html">Browse Products</a>
+        </div>
+
+        <!-- Post-order success message -->
+        <div id="order-success" class="order-success">
+            <div class="tick">✅</div>
+            <h2>Order Placed!</h2>
+            <p id="order-detail">Your order has been placed successfully.</p>
+            <a href="index.html">Continue Shopping</a>
         </div>
     </div>
 
-    <!-- RIGHT SIDE -->
+    <!-- RIGHT: price summary -->
     <div class="cart-right">
         <div class="price-title">PRICE DETAILS</div>
-
         <div class="price-row">
             <span>Price (MRP)</span>
             <span>₹<span id="mrp-total">0</span></span>
         </div>
-
         <div class="price-row">
             <span>Discount</span>
-            <span style="color:green;">- ₹<span id="discount-total">0</span></span>
+            <span style="color:#388e3c;">- ₹<span id="discount-total">0</span></span>
         </div>
-
         <div class="price-row total-row">
             <span>Total Amount</span>
             <span>₹<span id="cart-total">0</span></span>
         </div>
+        <p class="savings-msg">You save ₹<span id="save-amount">0</span> on this order</p>
 
-        <p style="color:green; font-size:14px; margin-top:10px;">
-            You will save ₹<span id="save-amount">0</span>
-        </p>
-
-        <button class="checkout-btn" onclick="checkout()">
+        <button class="checkout-btn" id="order-btn" onclick="checkout()">
             PLACE ORDER
         </button>
     </div>
 
 </div>
 
-<script src="script.js"></script>
-
 <script>
-// Basic empty cart check (frontend fallback)
-window.onload = function() {
-    let cart = JSON.parse(localStorage.getItem("cart")) || [];
-    if(cart.length === 0) {
-        document.getElementById("empty-cart").style.display = "block";
-    }
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const API = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? "http://localhost:5000/api"
+    : "/api";
+
+const token   = localStorage.getItem("token");
+const userId  = localStorage.getItem("user_id");
+const headers = {
+    "Content-Type": "application/json",
+    ...(token ? { "Authorization": `Bearer ${token}` } : {})
 };
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+window.onload = function () {
+    loadCart();
+};
+
+// ── LOAD CART ─────────────────────────────────────────────────────────────────
+// Authenticated users: fetch from DB via GET /api/cart
+// Guests: use localStorage
+async function loadCart() {
+    if (token) {
+        try {
+            const res  = await fetch(`${API}/cart`, { headers });
+            if (!res.ok) throw new Error("Cart API error");
+            const data = await res.json();
+
+            // Backend may return { cart: [...] } or a plain array
+            const serverCart = Array.isArray(data) ? data : (data.cart || data.items || []);
+
+            // Normalise items and mirror into localStorage so other pages stay in sync
+            const normalized = serverCart.map(item => ({
+                id:    item.product_id || item.id,
+                name:  item.name  || item.product_name || "Product",
+                price: parseFloat(item.price || item.selling_price || 0),
+                mrp:   parseFloat(item.mrp   || item.original_price || item.price || 0),
+                image: item.image || item.image_url || "https://via.placeholder.com/120",
+                qty:   parseInt(item.quantity || item.qty || 1),
+            }));
+
+            localStorage.setItem("cart", JSON.stringify(normalized));
+            hideSkeleton();
+            renderCart(normalized);
+
+        } catch (err) {
+            console.warn("Cart API failed, using localStorage:", err);
+            hideSkeleton();
+            renderCart(getLocalCart());
+        }
+    } else {
+        hideSkeleton();
+        renderCart(getLocalCart());
+    }
+}
+
+// ── GET LOCAL CART ────────────────────────────────────────────────────────────
+function getLocalCart() {
+    return JSON.parse(localStorage.getItem("cart")) || [];
+}
+
+// ── RENDER CART ITEMS ─────────────────────────────────────────────────────────
+function renderCart(cart) {
+    const container = document.getElementById("cart-items");
+    container.innerHTML = "";
+
+    if (!cart || cart.length === 0) {
+        document.getElementById("empty-cart").style.display = "block";
+        document.getElementById("order-btn").disabled = true;
+        updateSummary([]);
+        return;
+    }
+
+    document.getElementById("empty-cart").style.display = "none";
+    document.getElementById("order-btn").disabled = false;
+
+    cart.forEach(item => {
+        const mrp   = item.mrp   || item.price;
+        const price = item.price;
+        const disc  = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
+
+        const box = document.createElement("div");
+        box.className  = "cart-item-box";
+        box.dataset.id = item.id;
+        box.innerHTML  = `
+            <div class="cart-item-left">
+                <img src="${item.image}" alt="${item.name}"
+                     onerror="this.src='https://via.placeholder.com/120'">
+            </div>
+            <div class="cart-item-center">
+                <h4>${item.name}</h4>
+                <p class="item-price">₹${price.toLocaleString("en-IN")}</p>
+                ${mrp > price
+                    ? `<p class="item-mrp">₹${mrp.toLocaleString("en-IN")}</p>
+                       <p class="item-disc">${disc}% off</p>`
+                    : ""}
+                <div class="qty-controls">
+                    <button onclick="changeQty('${item.id}', -1)">−</button>
+                    <span class="qty-display" id="qty-${item.id}">${item.qty}</span>
+                    <button onclick="changeQty('${item.id}', +1)">+</button>
+                </div>
+                <button class="remove-btn" onclick="removeItem('${item.id}')">Remove</button>
+            </div>
+        `;
+        container.appendChild(box);
+    });
+
+    updateSummary(cart);
+}
+
+// ── CHANGE QUANTITY ────────────────────────────────────────────────────────────
+async function changeQty(productId, delta) {
+    let cart = getLocalCart();
+    const item = cart.find(i => String(i.id) === String(productId));
+    if (!item) return;
+
+    item.qty += delta;
+    if (item.qty <= 0) { removeItem(productId); return; }
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+    document.getElementById(`qty-${productId}`).innerText = item.qty;
+    updateSummary(cart);
+
+    // Sync with DB
+    if (token) {
+        try {
+            await fetch(`${API}/cart`, {
+                method: "POST",
+                headers,
+                body: JSON.stringify({ product_id: productId, quantity: item.qty })
+            });
+        } catch (e) { console.warn("Qty sync failed:", e); }
+    }
+}
+
+// ── REMOVE ITEM ────────────────────────────────────────────────────────────────
+async function removeItem(productId) {
+    // Remove from localStorage
+    let cart = getLocalCart().filter(i => String(i.id) !== String(productId));
+    localStorage.setItem("cart", JSON.stringify(cart));
+
+    // Remove from DOM
+    const box = document.querySelector(`.cart-item-box[data-id="${productId}"]`);
+    if (box) box.remove();
+
+    if (cart.length === 0) {
+        document.getElementById("empty-cart").style.display = "block";
+        document.getElementById("order-btn").disabled = true;
+    }
+
+    updateSummary(cart);
+    showToast("Item removed");
+
+    // Sync with DB
+    if (token) {
+        try {
+            await fetch(`${API}/cart/${productId}`, { method: "DELETE", headers });
+        } catch (e) { console.warn("Remove sync failed:", e); }
+    }
+}
+
+// ── PRICE SUMMARY ──────────────────────────────────────────────────────────────
+function updateSummary(cart) {
+    let mrpTotal  = 0;
+    let paidTotal = 0;
+
+    cart.forEach(item => {
+        const qty = item.qty || 1;
+        mrpTotal  += (item.mrp   || item.price) * qty;
+        paidTotal += item.price * qty;
+    });
+
+    const discount = mrpTotal - paidTotal;
+
+    document.getElementById("mrp-total").innerText      = Math.round(mrpTotal).toLocaleString("en-IN");
+    document.getElementById("discount-total").innerText = Math.round(discount).toLocaleString("en-IN");
+    document.getElementById("cart-total").innerText     = Math.round(paidTotal).toLocaleString("en-IN");
+    document.getElementById("save-amount").innerText    = Math.round(discount).toLocaleString("en-IN");
+}
+
+// ── CHECKOUT / PLACE ORDER ─────────────────────────────────────────────────────
+async function checkout() {
+    const cart = getLocalCart();
+    if (cart.length === 0) { showToast("Your cart is empty!"); return; }
+
+    const btn = document.getElementById("order-btn");
+    btn.disabled  = true;
+    btn.innerText = "Placing order…";
+
+    // Build order payload
+    const orderPayload = {
+        items: cart.map(item => ({
+            product_id: item.id,
+            name:       item.name,
+            price:      item.price,
+            quantity:   item.qty || 1,
+        })),
+        total_amount: cart.reduce((sum, i) => sum + i.price * (i.qty || 1), 0),
+        // Include user_id for non-JWT backends
+        ...(userId ? { user_id: parseInt(userId) } : {})
+    };
+
+    if (token) {
+        // ── Authenticated: POST to /api/orders ────────────────────────────
+        try {
+            const res  = await fetch(`${API}/orders`, {
+                method: "POST",
+                headers,
+                body: JSON.stringify(orderPayload)
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || `HTTP ${res.status}`);
+            }
+
+            const data = await res.json();
+            const orderId = data.order_id || data.id || data.orderId || "";
+
+            // ── Award XP for order ────────────────────────────────────────
+            let xp = parseInt(localStorage.getItem("xp") || "0");
+            xp += 100;
+            localStorage.setItem("xp", xp);
+
+            // ── Clear cart everywhere ─────────────────────────────────────
+            localStorage.removeItem("cart");
+
+            // Also clear from DB
+            try {
+                await fetch(`${API}/cart`, { method: "DELETE", headers });
+            } catch (e) { /* non-critical */ }
+
+            showOrderSuccess(orderId);
+
+        } catch (err) {
+            console.error("Order failed:", err);
+            showToast("❌ Order failed: " + err.message);
+            btn.disabled  = false;
+            btn.innerText = "PLACE ORDER";
+        }
+
+    } else {
+        // ── Guest: show success but note account needed for tracking ──────
+        showToast("⚠️ Login to track your order");
+        localStorage.removeItem("cart");
+        setTimeout(() => showOrderSuccess(""), 800);
+    }
+}
+
+// ── SHOW ORDER SUCCESS ─────────────────────────────────────────────────────────
+function showOrderSuccess(orderId) {
+    document.getElementById("cart-skeleton").style.display = "none";
+    document.getElementById("cart-items").style.display    = "none";
+    document.getElementById("empty-cart").style.display    = "none";
+    document.getElementById("order-btn").style.display     = "none";
+
+    const detail = document.getElementById("order-detail");
+    detail.innerText = orderId
+        ? `Order #${orderId} confirmed. You earned 100 XP! 🎮`
+        : "Your order has been placed. You earned 100 XP! 🎮";
+
+    document.getElementById("order-success").style.display = "block";
+}
+
+// ── HIDE SKELETON ──────────────────────────────────────────────────────────────
+function hideSkeleton() {
+    const sk = document.getElementById("cart-skeleton");
+    if (sk) sk.style.display = "none";
+}
+
+// ── TOAST ──────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+    const t = document.createElement("div");
+    t.className  = "toast";
+    t.innerText  = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2200);
+}
 </script>
 
 </body>

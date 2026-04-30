@@ -6,109 +6,421 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Browse products at ShopXP.">
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* ── Loading skeletons ─────────────────────────────────────── */
+        .skeleton-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 16px;
+            width: 200px;
+            animation: shimmer 1.4s infinite;
+        }
+        .skeleton-img  { width: 100%; height: 160px; background: #e0e0e0; border-radius: 6px; margin-bottom: 12px; }
+        .skeleton-line { height: 14px; background: #e0e0e0; border-radius: 4px; margin-bottom: 8px; }
+        .skeleton-line.short { width: 60%; }
+
+        @keyframes shimmer {
+            0%   { opacity: 1; }
+            50%  { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* ── Error / empty states ──────────────────────────────────── */
+        .state-msg {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+            width: 100%;
+        }
+        .state-msg button {
+            margin-top: 16px;
+            padding: 10px 24px;
+            background: #2874f0;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        /* ── Category filter bar ───────────────────────────────────── */
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            padding: 16px 5%;
+            flex-wrap: wrap;
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .filter-btn {
+            padding: 7px 18px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+        .filter-btn:hover, .filter-btn.active {
+            background: #2874f0;
+            color: white;
+            border-color: #2874f0;
+        }
+
+        /* ── Product grid ──────────────────────────────────────────── */
+        .products {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 30px 5%;
+            justify-content: flex-start;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            width: 200px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+        .product-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.14);
+            transform: translateY(-2px);
+        }
+        .product-card img {
+            width: 100%;
+            height: 160px;
+            object-fit: contain;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .product-card h3 { font-size: 14px; margin: 0 0 6px; color: #212121; }
+        .product-card .price { font-size: 16px; font-weight: bold; color: #212121; margin: 0 0 4px; }
+        .product-card .mrp {
+            font-size: 12px;
+            color: #878787;
+            text-decoration: line-through;
+            margin: 0 0 4px;
+        }
+        .product-card .discount { font-size: 12px; color: #388e3c; margin: 0 0 10px; }
+        .product-card .add-to-cart {
+            width: 100%;
+            padding: 8px;
+            background: #ff9f00;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+        .product-card .add-to-cart:hover { background: #e68900; }
+
+        /* ── Results count ─────────────────────────────────────────── */
+        .results-bar {
+            padding: 12px 5% 0;
+            color: #878787;
+            font-size: 13px;
+        }
+    </style>
 </head>
 <body>
 
 <header class="header">
     <div class="logo">🎮 ShopXP</div>
-
     <nav id="nav" class="nav">
         <a href="index.html">Home</a>
         <a href="profile.html">Profile</a>
         <a href="cart.html">Cart (<span id="cart-count">0</span>)</a>
     </nav>
-
     <button class="menu-btn" onclick="toggleMenu()">☰</button>
 </header>
 
+<!-- Category filter bar (populated dynamically) -->
+<div class="filter-bar" id="filter-bar">
+    <button class="filter-btn active" data-category="all" onclick="filterProducts('all', this)">All</button>
+</div>
+
+<div class="results-bar" id="results-bar"></div>
+
 <main>
-
-<section class="products">
-
-    <article class="product-card">
-        <img src="https://via.placeholder.com/200" alt="Smartphone" loading="lazy">
-        <h3>Smartphone</h3>
-        <p class="price">₹15,000</p>
-        <div class="reward"></div>
-        <button class="add-to-cart"
-            data-id="1"
-            data-name="Smartphone"
-            data-price="15000"
-            data-image="https://via.placeholder.com/200">
-            Add to Cart
-        </button>
-    </article>
-
-    <article class="product-card">
-        <img src="https://via.placeholder.com/200" alt="Laptop" loading="lazy">
-        <h3>Laptop</h3>
-        <p class="price">₹55,000</p>
-        <div class="reward"></div>
-        <button class="add-to-cart"
-            data-id="2"
-            data-name="Laptop"
-            data-price="55000"
-            data-image="https://via.placeholder.com/200">
-            Add to Cart
-        </button>
-    </article>
-
-</section>
-
+    <section class="products" id="products-grid">
+        <!-- Skeleton placeholders while loading -->
+        <div class="skeleton-card" id="sk1">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line short"></div>
+        </div>
+        <div class="skeleton-card" id="sk2">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line short"></div>
+        </div>
+        <div class="skeleton-card" id="sk3">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line short"></div>
+        </div>
+        <div class="skeleton-card" id="sk4">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line short"></div>
+        </div>
+    </section>
 </main>
 
 <footer>
-    <Center>
-    <p>© 2026 ShopXP. All Rights Reserved.</p>
-    </Center>
+    <center><p>© 2026 ShopXP. All Rights Reserved.</p></center>
 </footer>
 
 <script src="script.js"></script>
-
 <script>
-// Toggle menu
+// ── CONFIG ───────────────────────────────────────────────────────────────────
+const API = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? "http://localhost:5000/api"
+    : "/api";
+
+const token = localStorage.getItem("token");
+const headers = token
+    ? { "Content-Type": "application/json", "Authorization": `Bearer ${token}` }
+    : { "Content-Type": "application/json" };
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let allProducts     = [];  // full list from API
+let activeCategory  = "all";
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+window.onload = function() {
+    updateCartCount();
+    loadProducts();
+};
+
+// ── FETCH PRODUCTS FROM BACKEND ───────────────────────────────────────────────
+async function loadProducts() {
+    try {
+        const res  = await fetch(`${API}/products`, { headers });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        // Backend may return { products: [...] } or a plain array
+        allProducts = Array.isArray(data) ? data : (data.products || []);
+
+        removeSkeletons();
+
+        if (allProducts.length === 0) {
+            showEmptyState("No products found.");
+            return;
+        }
+
+        buildFilterBar(allProducts);
+        renderProducts(allProducts);
+
+    } catch (err) {
+        console.error("Failed to load products:", err);
+        removeSkeletons();
+        showErrorState();
+    }
+}
+
+// ── REMOVE SKELETON CARDS ────────────────────────────────────────────────────
+function removeSkeletons() {
+    ["sk1","sk2","sk3","sk4"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+    });
+}
+
+// ── BUILD CATEGORY FILTER BAR ─────────────────────────────────────────────────
+function buildFilterBar(products) {
+    const categories = ["all", ...new Set(products.map(p => p.category).filter(Boolean))];
+    const bar = document.getElementById("filter-bar");
+    bar.innerHTML = "";
+    categories.forEach(cat => {
+        const btn = document.createElement("button");
+        btn.className = "filter-btn" + (cat === "all" ? " active" : "");
+        btn.dataset.category = cat;
+        btn.innerText = cat === "all" ? "All" : cat;
+        btn.onclick = () => filterProducts(cat, btn);
+        bar.appendChild(btn);
+    });
+}
+
+// ── FILTER ────────────────────────────────────────────────────────────────────
+function filterProducts(category, btn) {
+    activeCategory = category;
+
+    // Update active button
+    document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    const filtered = category === "all"
+        ? allProducts
+        : allProducts.filter(p => p.category === category);
+
+    renderProducts(filtered);
+}
+
+// ── RENDER PRODUCT CARDS ──────────────────────────────────────────────────────
+function renderProducts(products) {
+    const grid = document.getElementById("products-grid");
+    const resultsBar = document.getElementById("results-bar");
+
+    grid.innerHTML = "";
+    resultsBar.innerText = `Showing ${products.length} product${products.length !== 1 ? "s" : ""}`;
+
+    if (products.length === 0) {
+        grid.innerHTML = `<div class="state-msg">No products in this category.</div>`;
+        return;
+    }
+
+    products.forEach(product => {
+        const card = buildProductCard(product);
+        grid.appendChild(card);
+    });
+}
+
+// ── BUILD A SINGLE PRODUCT CARD ───────────────────────────────────────────────
+function buildProductCard(product) {
+    // Normalise field names — backend might use snake_case or camelCase
+    const id       = product.id       || product.product_id;
+    const name     = product.name     || product.product_name || "Product";
+    const price    = parseFloat(product.price || product.selling_price || 0);
+    const mrp      = parseFloat(product.mrp   || product.original_price || price);
+    const image    = product.image    || product.image_url   || "https://via.placeholder.com/200";
+    const category = product.category || "";
+
+    const discountPct = mrp > price
+        ? Math.round(((mrp - price) / mrp) * 100)
+        : 0;
+
+    const article = document.createElement("article");
+    article.className = "product-card";
+    article.innerHTML = `
+        <img src="${image}" alt="${name}" loading="lazy"
+             onerror="this.src='https://via.placeholder.com/200'">
+        <h3>${name}</h3>
+        <p class="price">₹${price.toLocaleString("en-IN")}</p>
+        ${mrp > price ? `<p class="mrp">₹${mrp.toLocaleString("en-IN")}</p>
+                         <p class="discount">${discountPct}% off</p>` : ""}
+        <button class="add-to-cart"
+            data-id="${id}"
+            data-name="${name}"
+            data-price="${price}"
+            data-mrp="${mrp}"
+            data-image="${image}"
+            data-category="${category}">
+            Add to Cart
+        </button>
+    `;
+
+    article.querySelector(".add-to-cart").addEventListener("click", handleAddToCart);
+    return article;
+}
+
+// ── ADD TO CART ───────────────────────────────────────────────────────────────
+// Tries POST /api/cart (authenticated). Falls back to localStorage so guests
+// can still shop without an account.
+async function handleAddToCart(e) {
+    const btn = e.currentTarget;
+    const product = {
+        id:       btn.dataset.id,
+        name:     btn.dataset.name,
+        price:    parseFloat(btn.dataset.price),
+        mrp:      parseFloat(btn.dataset.mrp   || btn.dataset.price),
+        image:    btn.dataset.image,
+        category: btn.dataset.category,
+        qty: 1
+    };
+
+    if (token) {
+        // ── Authenticated: persist cart in DB ─────────────────────────────
+        try {
+            const res = await fetch(`${API}/cart`, {
+                method: "POST",
+                headers,
+                body: JSON.stringify({
+                    product_id: product.id,
+                    quantity:   1,
+                    // Send product details in case backend needs them for new items
+                    name:    product.name,
+                    price:   product.price,
+                    mrp:     product.mrp,
+                    image:   product.image
+                })
+            });
+            if (!res.ok) throw new Error("Cart API error");
+            showToast(`✅ ${product.name} added to cart!`);
+            // Keep localStorage in sync so cart.html can render instantly
+            addToLocalCart(product);
+        } catch (err) {
+            console.warn("Cart API failed, falling back to localStorage:", err);
+            addToLocalCart(product);
+            showToast(`🛒 ${product.name} added (offline mode)`);
+        }
+    } else {
+        // ── Guest: localStorage only ──────────────────────────────────────
+        addToLocalCart(product);
+        showToast(`🛒 ${product.name} added to cart!`);
+    }
+
+    updateCartCount();
+
+    // XP reward (10 XP per add-to-cart — your existing gamification logic)
+    if (typeof awardXP === "function") awardXP(10);
+}
+
+// ── LOCALSTORAGE CART HELPER ──────────────────────────────────────────────────
+function addToLocalCart(product) {
+    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+    const existing = cart.find(i => i.id === product.id);
+    if (existing) { existing.qty += 1; }
+    else          { cart.push(product); }
+    localStorage.setItem("cart", JSON.stringify(cart));
+}
+
+// ── CART COUNT (badge in nav) ─────────────────────────────────────────────────
+function updateCartCount() {
+    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+    const countEl = document.getElementById("cart-count");
+    if (countEl) countEl.innerText = cart.reduce((sum, i) => sum + (i.qty || 1), 0);
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+    const t = document.createElement("div");
+    t.style.cssText = `
+        position:fixed; bottom:24px; right:24px;
+        background:#212121; color:white; padding:12px 20px;
+        border-radius:24px; font-size:14px; z-index:999;
+        box-shadow:0 4px 20px rgba(0,0,0,0.3);
+        animation: fadeIn .2s ease;
+    `;
+    t.innerText = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2000);
+}
+
+// ── EMPTY / ERROR STATES ──────────────────────────────────────────────────────
+function showEmptyState(msg) {
+    document.getElementById("products-grid").innerHTML =
+        `<div class="state-msg">${msg}</div>`;
+}
+
+function showErrorState() {
+    document.getElementById("products-grid").innerHTML = `
+        <div class="state-msg">
+            ⚠️ Could not load products.<br>
+            <small>Make sure the backend is running.</small><br>
+            <button onclick="loadProducts()">Retry</button>
+        </div>`;
+}
+
+// ── MOBILE NAV ────────────────────────────────────────────────────────────────
 function toggleMenu() {
     document.getElementById("nav").classList.toggle("active");
 }
-
-// Update cart count
-function updateCartCount() {
-    let cart = JSON.parse(localStorage.getItem("cart")) || [];
-    document.getElementById("cart-count").innerText = cart.length;
-}
-
-// Add to cart (same logic as index.html)
-document.querySelectorAll(".add-to-cart").forEach(button => {
-    button.addEventListener("click", () => {
-
-        let product = {
-            id: button.dataset.id,
-            name: button.dataset.name,
-            price: parseInt(button.dataset.price),
-            image: button.dataset.image,
-            qty: 1
-        };
-
-        let cart = JSON.parse(localStorage.getItem("cart")) || [];
-
-        let existing = cart.find(item => item.id === product.id);
-
-        if(existing) {
-            existing.qty += 1;
-        } else {
-            cart.push(product);
-        }
-
-        localStorage.setItem("cart", JSON.stringify(cart));
-
-        updateCartCount();
-
-        alert(product.name + " added to cart!");
-    });
-});
-
-// Init
-updateCartCount();
 </script>
 
 </body>

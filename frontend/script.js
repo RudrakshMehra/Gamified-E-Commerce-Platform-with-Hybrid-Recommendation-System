@@ -2,7 +2,14 @@
 // script.js  —  ShopXP  (fully DB-integrated)
 // =============================================
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = (
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1" ||
+  window.location.hostname === ""
+) ? "http://localhost:5000/api" : "/api";
+
+// Derive uploads base from API_BASE so images work under file:// too
+const UPLOADS_BASE = API_BASE.replace("/api", "/uploads");
 
 // ── Request helper ───────────────────────────
 
@@ -247,23 +254,36 @@ async function checkout() {
     return;
   }
 
-  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-  if (cart.length === 0) { showToast("Cart is empty ⚠️"); return; }
+  // Always fetch the authoritative cart from DB, not stale localStorage
+  let cart;
+  try {
+    cart = await apiRequest("/cart");
+  } catch {
+    cart = JSON.parse(localStorage.getItem("cart") || "[]");
+  }
 
-  const user  = getUser();
+  if (!cart || cart.length === 0) { showToast("Cart is empty ⚠️"); return; }
+
   const items = cart.map(i => ({
     product_id: i.product_id ?? i.id,
     quantity:   i.quantity   ?? i.qty ?? 1,
   }));
 
   try {
+    // user_id is read from JWT on the server — not sent from client
     const result = await apiRequest("/orders/place", {
       method: "POST",
-      body: JSON.stringify({ user_id: user.id, items }),
+      body: JSON.stringify({ items }),
     });
 
-    // Persist XP/level from server response into localStorage so UI updates
-    const updatedUser = { ...user, xp: result.newXP ?? user.xp, level: result.newLevel ?? user.level };
+    // Sync XP and level from server response
+    const user = getUser();
+    const updatedUser = {
+      ...user,
+      xp:    result.newXP    ?? user.xp,
+      level: result.newLevel ?? user.level,
+      coins: (user.coins ?? 0) + (result.coinsEarned ?? 0),
+    };
     localStorage.setItem("user", JSON.stringify(updatedUser));
     localStorage.setItem("xp", updatedUser.xp);
 
@@ -301,12 +321,12 @@ function renderProductCards(container, products) {
     div.setAttribute("data-category", p.category || "");
 
     div.innerHTML = `
-      <img src="${p.image ? '/uploads/' + p.image : 'https://via.placeholder.com/200'}"
+      <img src="${p.image ? UPLOADS_BASE + '/' + p.image : 'https://placehold.co/200x200?text=' + encodeURIComponent(p.name)}"
            alt="${p.name}" loading="lazy">
       <h3>${p.name}</h3>
       <p class="price">₹${Number(p.price).toLocaleString("en-IN")}</p>
       <div class="reward">🎯 Earn ${Math.floor(p.price / 100)} XP</div>
-      <button onclick='addToCart(${JSON.stringify({id: p.id, name: p.name, price: p.price, image: p.image ? "/uploads/"+p.image : ""})})'>
+      <button onclick='addToCart(${JSON.stringify({id: p.id, name: p.name, price: p.price, image: p.image ? UPLOADS_BASE+"/"+p.image : ""})})'>
         Add to Cart
       </button>
     `;
@@ -565,6 +585,18 @@ function toggleMenu() {
 // =============================================
 
 document.addEventListener("DOMContentLoaded", async () => {
+
+  // ── Update navbar Login → Logout when authenticated ─────────────────────
+  const navAuthLink = document.getElementById("nav-auth-link");
+  if (navAuthLink && localStorage.getItem("token")) {
+    navAuthLink.textContent = "Logout";
+    navAuthLink.href = "#";
+    navAuthLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      clearSession();
+      window.location.href = "login.html";
+    });
+  }
 
   // Protect auth-required pages
   const path = window.location.pathname;

@@ -53,7 +53,7 @@
         <a href="reward.html">Level Up</a>
         <a href="about.html">About Us</a>
         <a href="cart.html">Cart (<span id="cart-count">0</span>)</a>
-        <a href="login.html">Login</a>
+        <a href="login.html" id="nav-auth-link">Login</a>
     </nav>
 
     <button class="menu-btn" onclick="toggleMenu()">☰</button>
@@ -103,157 +103,7 @@
 </section>
 
 <section id="products" class="products">
-
-    <!-- ================= MOBILES ================= -->
-    <article class="product-card" data-category="mobiles">
-        <img src="https://via.placeholder.com/200">
-        <h3>Smartphone A</h3>
-        <p class="price">₹15,000</p>
-        <button class="add-to-cart" data-id="5" data-name="Smartphone A" data-price="15000" data-image="https://via.placeholder.com/200">Add to Cart</button>
-    </article>
-
-    <article class="product-card" data-category="mobiles">
-        <img src="https://via.placeholder.com/200">
-        <h3>Smartphone B</h3>
-        <p class="price">₹20,000</p>
-        <button class="add-to-cart" data-id="6" data-name="Smartphone B" data-price="20000" data-image="https://via.placeholder.com/200">Add to Cart</button>
-    </article>
-
-    <article class="product-card" data-category="mobiles">
-        <img src="https://via.placeholder.com/200">
-        <h3>Smartphone C</h3>
-        <p class="price">₹25,000</p>
-        <button class="add-to-cart" data-id="7" data-name="Smartphone C" data-price="25000" data-image="https://via.placeholder.com/200">Add to Cart</button>
-    </article>
-
-    <article class="product-card" data-category="mobiles">
-        <img src="https://via.placeholder.com/200">
-        <h3>Smartphone D</h3>
-        <p class="price">₹30,000</p>
-        <button class="add-to-cart" data-id="8" data-name="Smartphone D" data-price="30000" data-image="https://via.placeholder.com/200">Add to Cart</button>
-    </article>
-
-    
-
-    <!-- ================= ELECTRONICS ================= -->
-    <article class="product-card" data-category="electronics">
-        <img src="https://via.placeholder.com/200">
-        <h3>Laptop</h3>
-        <p class="price">₹55,000</p>
-        <button class="add-to-cart" data-id="9" data-name="Laptop" data-price="55000" data-image="https://via.placeholder.com/200">Add to Cart</button>
-    </article>
-
-    <article class="product-card" data-category="electronics">
-        <img src="https://via.placeholder.com/200">
-        <h3>Headphones</h3>
-        <p class="price">₹2,000</p>
-        <button class="add-to-cart" data-id="10" data-name="Headphones" data-price="2000" data-image="https://via.placeholder.com/200">Add to Cart</button>
-    </article>
-
-    <article class="product-card" data-category="electronics">
-        <img src="https://via.placeholder.com/200">
-        <h3>Smart Watch</h3>
-        <p class="price">₹5,000</p>
-        <button class="add-to-cart" data-id="11" data-name="Smart Watch" data-price="5000" data-image="https://via.placeholder.com/200">Add to Cart</button>
-    </article>
-
-    <article class="product-card" data-category="electronics">
-        <img src="https://via.placeholder.com/200">
-        <h3>Bluetooth Speaker</h3>
-        <p class="price">₹3,000</p>
-        <button class="add-to-cart" data-id="12" data-name="Speaker" data-price="3000" data-image="https://via.placeholder.com/200">Add to Cart</button>
-    </article>
-
-
-    <!-- ================= FASHION ================= -->
-    <article class="product-card" data-category="fashion">
-        <img src="https://via.placeholder.com/200">
-        <h3>T-Shirt</h3>
-        <p class="price">₹800</p>
-        <button class="add-to-cart" data-id="13" data-name="T-Shirt" data-price="800" data-image="https://via.placeholder.com/200">Add to Cart</button>
-    </article>
-
-    <article class="product-card" data-category="fashion">
-        <img src="https://via.placeholder.com/200">
-        <h3>Jeans</h3>
-        <p class="price">₹1500</p>
-        <button class="add-to-cart" data-id="14" data-name="Jeans" data-price="1500" data-image="https://via.placeholder.com/200">Add to Cart</button>
-    </article>
-
-    <article class="product-card" data-category="fashion">
-        <img src="https://via.placeholder.com/200">
-        <h3>Jacket</h3>
-        <p class="price">₹2500</p>
-        <button class="add-to-cart" data-id="15" data-name="Jacket" data-price="2500" data-image="https://via.placeholder.com/200">Add to Cart</button>
-    </article>
-
-    <article class="product-card" data-category="fashion">
-        <img src="https://via.placeholder.com/200">
-        <h3>Shoes</h3>
-        <p class="price">₹2000</p>
-        <button class="add-to-cart" data-id="16" data-name="Shoes" data-price="2000" data-image="https://via.placeholder.com/200">Add to Cart</button>
-    </article>
-
-
-    <!-- ================= BEAUTY ================= -->
-    <article class="product-card" data-category="beauty">
-        <img src="https://via.placeholder.com/200">
-        <h3>Face Cream</h3>
-        <p class="price">₹500</p>
-        <button class="add-to-cart" data-id="17" data-name="Face Cream" data-price="500" data-image="https://via.placeholder.com/200">Add to Cart</button>
-    </article>
-
-    <article class="product-card" data-category="beauty">
-        <img src="https://via.placeholder.com/200">
-        <h3>Lipstick</h3>
-        <p class="price">₹700</p>
-        <button class="add-to-cart" data-id="18" data-name="Lipstick" data-price="700" data-image="https://via.placeholder.com/200">Add to Cart</button>
-    </article>
-
-    <article class="product-card" data-category="beauty">
-        <img src="https://via.placeholder.com/200">
-        <h3>Perfume</h3>
-        <p class="price">₹1200</p>
-        <button class="add-to-cart" data-id="19" data-name="Perfume" data-price="1200" data-image="https://via.placeholder.com/200">Add to Cart</button>
-    </article>
-
-    <article class="product-card" data-category="beauty">
-        <img src="https://via.placeholder.com/200">
-        <h3>Face Wash</h3>
-        <p class="price">₹300</p>
-        <button class="add-to-cart" data-id="20" data-name="Face Wash" data-price="300" data-image="https://via.placeholder.com/200">Add to Cart</button>
-    </article>
-
-
-    <!-- ================= APPLIANCES ================= -->
-    <article class="product-card" data-category="appliances">
-        <img src="https://via.placeholder.com/200">
-        <h3>Microwave</h3>
-        <p class="price">₹7000</p>
-        <button class="add-to-cart" data-id="21" data-name="Microwave" data-price="7000" data-image="https://via.placeholder.com/200">Add to Cart</button>
-    </article>
-
-    <article class="product-card" data-category="appliances">
-        <img src="https://via.placeholder.com/200">
-        <h3>Refrigerator</h3>
-        <p class="price">₹25000</p>
-        <button class="add-to-cart" data-id="22" data-name="Fridge" data-price="25000" data-image="https://via.placeholder.com/200">Add to Cart</button>
-    </article>
-
-    <article class="product-card" data-category="appliances">
-        <img src="https://via.placeholder.com/200">
-        <h3>Washing Machine</h3>
-        <p class="price">₹18000</p>
-        <button class="add-to-cart" data-id="23" data-name="Washing Machine" data-price="18000" data-image="https://via.placeholder.com/200">Add to Cart</button>
-    </article>
-
-    <article class="product-card" data-category="appliances">
-        <img src="https://via.placeholder.com/200">
-        <h3>Air Conditioner</h3>
-        <p class="price">₹35000</p>
-        <button class="add-to-cart" data-id="24" data-name="AC" data-price="35000" data-image="https://via.placeholder.com/200">Add to Cart</button>
-    </article>
-
+    <!-- Products loaded dynamically from DB via script.js -->
 </section>
 
 <!-- =========================
@@ -276,49 +126,23 @@
 <script src="script.js"></script>
 
 <script>
-// Toggle mobile menu
-function toggleMenu() {
-    document.getElementById("nav").classList.toggle("active");
-}
-
-// Load cart count on page load
-function updateCartCount() {
-    let cart = JSON.parse(localStorage.getItem("cart")) || [];
-    document.getElementById("cart-count").innerText = cart.length;
-}
-
-// Add to cart functionality
-document.querySelectorAll(".add-to-cart").forEach(button => {
-    button.addEventListener("click", () => {
-
-        let product = {
-            id: button.dataset.id,
-            name: button.dataset.name,
-            price: parseInt(button.dataset.price),
-            image: button.dataset.image,
-            qty: 1
-        };
-
-        let cart = JSON.parse(localStorage.getItem("cart")) || [];
-
-        let existing = cart.find(item => item.id === product.id);
-
-        if(existing) {
-            existing.qty += 1;
-        } else {
-            cart.push(product);
-        }
-
-        localStorage.setItem("cart", JSON.stringify(cart));
-
-        updateCartCount();
-
-        alert(product.name + " added to cart!");
+// ── Navbar: swap Login → Logout when user is logged in ──────────────────
+(function updateNavAuth() {
+  const link = document.getElementById("nav-auth-link");
+  if (!link) return;
+  const token = localStorage.getItem("token");
+  if (token) {
+    link.textContent = "Logout";
+    link.href = "#";
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("cart");
+      window.location.reload();
     });
-});
-
-// Initialize
-updateCartCount();
+  }
+})();
 </script>
 
 </body>
