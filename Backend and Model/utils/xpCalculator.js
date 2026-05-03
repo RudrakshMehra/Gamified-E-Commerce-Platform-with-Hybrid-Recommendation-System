@@ -1,23 +1,17 @@
 // utils/xpCalculator.js
+// XP rule: ₹100 spent = 1 XP  (matches what product cards display)
 
 function calculateXP(amount) {
-  // example rule: 1 rupee spent = 1 XP
-  return Math.floor(amount);
+  return Math.floor(amount / 100);
 }
 
 function calculateLevel(xp) {
-  // simple leveling formula
-  // level increases every 100 XP
   return Math.floor(xp / 500) + 1;
 }
 
 function calculateCoins(amount) {
-  // reward coins: 10% of amount
-  return Math.floor(amount * 0.1);
+  // 1 coin per ₹100 spent
+  return Math.floor(amount / 100);
 }
 
-module.exports = {
-  calculateXP,
-  calculateLevel,
-  calculateCoins,
-};
+module.exports = { calculateXP, calculateLevel, calculateCoins };

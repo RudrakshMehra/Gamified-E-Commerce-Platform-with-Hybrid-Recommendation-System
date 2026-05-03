@@ -268,7 +268,7 @@ body {
 </div>
 
 <script>
-// ── CONFIG ────────────────────────────────────────────────────────────────────
+// ── CONFIG ───────────────────────────────────────────────────────────────────
 const API = (
     window.location.hostname === "localhost" ||
     window.location.hostname === "127.0.0.1" ||
@@ -276,46 +276,34 @@ const API = (
 ) ? "http://localhost:5000/api" : "/api";
 
 const UPLOADS_BASE = API.replace("/api", "/uploads");
-
 const token   = localStorage.getItem("token");
-const userId  = localStorage.getItem("user_id");
 const headers = {
     "Content-Type": "application/json",
     ...(token ? { "Authorization": `Bearer ${token}` } : {})
 };
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
-window.onload = function () {
-    loadCart();
-};
+// ── INIT ─────────────────────────────────────────────────────────────────────
+window.onload = function () { loadCart(); };
 
-// ── LOAD CART ─────────────────────────────────────────────────────────────────
-// Authenticated users: fetch from DB via GET /api/cart
-// Guests: use localStorage
+// ── LOAD CART FROM DB ────────────────────────────────────────────────────────
 async function loadCart() {
     if (token) {
         try {
             const res  = await fetch(`${API}/cart`, { headers });
             if (!res.ok) throw new Error("Cart API error");
             const data = await res.json();
-
-            // Backend may return { cart: [...] } or a plain array
             const serverCart = Array.isArray(data) ? data : (data.cart || data.items || []);
-
-            // Normalise items and mirror into localStorage so other pages stay in sync
             const normalized = serverCart.map(item => ({
                 id:    item.product_id || item.id,
-                name:  item.name  || item.product_name || "Product",
-                price: parseFloat(item.price || item.selling_price || 0),
-                mrp:   parseFloat(item.mrp   || item.original_price || item.price || 0),
+                name:  item.name  || "Product",
+                price: parseFloat(item.price || 0),
+                mrp:   parseFloat(item.mrp   || item.price || 0),
                 image: item.image || "",
                 qty:   parseInt(item.quantity || item.qty || 1),
             }));
-
             localStorage.setItem("cart", JSON.stringify(normalized));
             hideSkeleton();
             renderCart(normalized);
-
         } catch (err) {
             console.warn("Cart API failed, using localStorage:", err);
             hideSkeleton();
@@ -327,12 +315,9 @@ async function loadCart() {
     }
 }
 
-// ── GET LOCAL CART ────────────────────────────────────────────────────────────
-function getLocalCart() {
-    return JSON.parse(localStorage.getItem("cart")) || [];
-}
+function getLocalCart() { return JSON.parse(localStorage.getItem("cart")) || []; }
 
-// ── RENDER CART ITEMS ─────────────────────────────────────────────────────────
+// ── RENDER CART ITEMS ────────────────────────────────────────────────────────
 function renderCart(cart) {
     const container = document.getElementById("cart-items");
     container.innerHTML = "";
@@ -344,20 +329,23 @@ function renderCart(cart) {
         return;
     }
 
-    document.getElementById("empty-cart").style.display = "none";
+    document.getElementById("empty-cart").style.display  = "none";
     document.getElementById("order-btn").disabled = false;
 
     cart.forEach(item => {
         const mrp   = item.mrp   || item.price;
         const price = item.price;
         const disc  = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
+        const imgSrc = item.image
+            ? UPLOADS_BASE + "/" + item.image
+            : "https://placehold.co/120x120?text=" + encodeURIComponent(item.name);
 
         const box = document.createElement("div");
         box.className  = "cart-item-box";
         box.dataset.id = item.id;
         box.innerHTML  = `
             <div class="cart-item-left">
-                <img src="${item.image ? UPLOADS_BASE+'/'+item.image : 'https://placehold.co/120x120?text=img'}" alt="${item.name}"
+                <img src="${imgSrc}" alt="${item.name}"
                      onerror="this.src='https://placehold.co/120x120?text=img'">
             </div>
             <div class="cart-item-center">
@@ -368,190 +356,74 @@ function renderCart(cart) {
                        <p class="item-disc">${disc}% off</p>`
                     : ""}
                 <div class="qty-controls">
-                    <button onclick="changeQty('${item.id}', -1)">−</button>
+                    <button onclick="changeQtyLocal('${item.id}', -1)">−</button>
                     <span class="qty-display" id="qty-${item.id}">${item.qty}</span>
-                    <button onclick="changeQty('${item.id}', +1)">+</button>
+                    <button onclick="changeQtyLocal('${item.id}', +1)">+</button>
                 </div>
-                <button class="remove-btn" onclick="removeItem('${item.id}')">Remove</button>
-            </div>
-        `;
+                <button class="remove-btn" onclick="removeItemLocal('${item.id}')">Remove</button>
+            </div>`;
         container.appendChild(box);
     });
-
     updateSummary(cart);
 }
 
-// ── CHANGE QUANTITY ────────────────────────────────────────────────────────────
-async function changeQty(productId, delta) {
+// ── QTY / REMOVE ─────────────────────────────────────────────────────────────
+async function changeQtyLocal(productId, delta) {
     let cart = getLocalCart();
     const item = cart.find(i => String(i.id) === String(productId));
     if (!item) return;
-
     item.qty += delta;
-    if (item.qty <= 0) { removeItem(productId); return; }
-
+    if (item.qty <= 0) { removeItemLocal(productId); return; }
     localStorage.setItem("cart", JSON.stringify(cart));
     document.getElementById(`qty-${productId}`).innerText = item.qty;
     updateSummary(cart);
-
-    // Sync with DB
     if (token) {
         try {
-            await fetch(`${API}/cart`, {
-                method: "POST",
-                headers,
-                body: JSON.stringify({ product_id: productId, quantity: item.qty })
-            });
-        } catch (e) { console.warn("Qty sync failed:", e); }
+            await fetch(`${API}/cart`, { method:"POST", headers,
+                body: JSON.stringify({ product_id: productId, quantity: item.qty }) });
+        } catch(e) { console.warn("Qty sync failed:", e); }
     }
 }
 
-// ── REMOVE ITEM ────────────────────────────────────────────────────────────────
-async function removeItem(productId) {
-    // Remove from localStorage
+async function removeItemLocal(productId) {
     let cart = getLocalCart().filter(i => String(i.id) !== String(productId));
     localStorage.setItem("cart", JSON.stringify(cart));
-
-    // Remove from DOM
     const box = document.querySelector(`.cart-item-box[data-id="${productId}"]`);
     if (box) box.remove();
-
     if (cart.length === 0) {
         document.getElementById("empty-cart").style.display = "block";
         document.getElementById("order-btn").disabled = true;
     }
-
     updateSummary(cart);
     showToast("Item removed");
-
-    // Sync with DB
     if (token) {
-        try {
-            await fetch(`${API}/cart/${productId}`, { method: "DELETE", headers });
-        } catch (e) { console.warn("Remove sync failed:", e); }
+        try { await fetch(`${API}/cart/${productId}`, { method:"DELETE", headers }); }
+        catch(e) { console.warn("Remove sync failed:", e); }
     }
 }
 
-// ── PRICE SUMMARY ──────────────────────────────────────────────────────────────
+// ── PRICE SUMMARY ─────────────────────────────────────────────────────────────
 function updateSummary(cart) {
-    let mrpTotal  = 0;
-    let paidTotal = 0;
-
+    let mrpTotal = 0, paidTotal = 0;
     cart.forEach(item => {
         const qty = item.qty || 1;
-        mrpTotal  += (item.mrp   || item.price) * qty;
+        mrpTotal  += (item.mrp || item.price) * qty;
         paidTotal += item.price * qty;
     });
-
     const discount = mrpTotal - paidTotal;
-
     document.getElementById("mrp-total").innerText      = Math.round(mrpTotal).toLocaleString("en-IN");
     document.getElementById("discount-total").innerText = Math.round(discount).toLocaleString("en-IN");
     document.getElementById("cart-total").innerText     = Math.round(paidTotal).toLocaleString("en-IN");
     document.getElementById("save-amount").innerText    = Math.round(discount).toLocaleString("en-IN");
 }
 
-// ── CHECKOUT / PLACE ORDER ─────────────────────────────────────────────────────
-async function checkout() {
-    const cart = getLocalCart();
-    if (cart.length === 0) { showToast("Your cart is empty!"); return; }
-
-    const btn = document.getElementById("order-btn");
-    btn.disabled  = true;
-    btn.innerText = "Placing order…";
-
-    // Build order payload
-    // Show payment modal instead of placing order directly
-    // Payment is handled by script.js showPaymentModal / confirmPayment
-    const cartForModal = getLocalCart();
-    if (typeof showPaymentModal === "function") {
-        showPaymentModal(cartForModal);
-        btn.disabled = false;
-        btn.innerText = "PLACE ORDER";
-        return;
-    }
-    const orderPayload = {
-        items: cart.map(item => ({ product_id: item.id, quantity: item.qty || 1 })),
-    };
-
-    if (token) {
-        // ── Authenticated: POST to /api/orders ────────────────────────────
-        try {
-            const res  = await fetch(`${API}/orders/place`, {
-                method: "POST",
-                headers,
-                body: JSON.stringify(orderPayload)
-            });
-
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err.message || `HTTP ${res.status}`);
-            }
-
-            const data = await res.json();
-            const orderId = data.order_id || data.id || data.orderId || "";
-
-            // ── XP synced from server response ───────────────────────
-            const xpEarned = data.xpEarned || 0;
-            const newXP = (parseInt(localStorage.getItem("xp")||"0")) + xpEarned;
-            localStorage.setItem("xp", newXP);
-            const storedUser = JSON.parse(localStorage.getItem("user")||"{}");
-            if (storedUser) { storedUser.xp = newXP; localStorage.setItem("user", JSON.stringify(storedUser)); }
-
-            // ── Clear cart everywhere ─────────────────────────────────────
-            localStorage.removeItem("cart");
-
-            // Also clear from DB
-            try {
-                await fetch(`${API}/cart`, { method: "DELETE", headers });
-            } catch (e) { /* non-critical */ }
-
-            showOrderSuccess(orderId);
-
-        } catch (err) {
-            console.error("Order failed:", err);
-            showToast("❌ Order failed: " + err.message);
-            btn.disabled  = false;
-            btn.innerText = "PLACE ORDER";
-        }
-
-    } else {
-        // ── Guest: show success but note account needed for tracking ──────
-        showToast("⚠️ Login to track your order");
-        localStorage.removeItem("cart");
-        setTimeout(() => showOrderSuccess(""), 800);
-    }
-}
-
-// ── SHOW ORDER SUCCESS ─────────────────────────────────────────────────────────
-function showOrderSuccess(orderId) {
-    document.getElementById("cart-skeleton").style.display = "none";
-    document.getElementById("cart-items").style.display    = "none";
-    document.getElementById("empty-cart").style.display    = "none";
-    document.getElementById("order-btn").style.display     = "none";
-
-    const detail = document.getElementById("order-detail");
-    detail.innerText = orderId
-        ? `Order #${orderId} confirmed. You earned 100 XP! 🎮`
-        : "Your order has been placed. You earned 100 XP! 🎮";
-
-    document.getElementById("order-success").style.display = "block";
-}
-
-// ── HIDE SKELETON ──────────────────────────────────────────────────────────────
-function hideSkeleton() {
-    const sk = document.getElementById("cart-skeleton");
-    if (sk) sk.style.display = "none";
-}
-
-// ── TOAST ──────────────────────────────────────────────────────────────────────
+// ── SKELETON / TOAST ─────────────────────────────────────────────────────────
+function hideSkeleton() { const sk=document.getElementById("cart-skeleton"); if(sk) sk.style.display="none"; }
 function showToast(msg) {
-    const t = document.createElement("div");
-    t.className  = "toast";
-    t.innerText  = msg;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 2200);
+    const t=document.createElement("div"); t.className="toast"; t.innerText=msg;
+    document.body.appendChild(t); setTimeout(()=>t.remove(),2200);
 }
+// checkout() is intentionally NOT defined here — it lives in script.js and opens the payment modal
 </script>
 
 </body>
