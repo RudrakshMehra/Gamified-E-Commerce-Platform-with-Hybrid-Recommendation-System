@@ -10,13 +10,19 @@ router.post("/place", authMiddleware, async (req, res) => {
   const client = await pool.connect();
   try {
     const user_id = req.user.id;
-    const { items, payment_method } = req.body;
+    const { items, payment_method, delivery_address, upi_id } = req.body;
 
     if (!items || items.length === 0)
       return res.status(400).json({ message: "Invalid order data" });
 
+    if (!delivery_address || !delivery_address.fullName || !delivery_address.phone || !delivery_address.addressLine || !delivery_address.city || !delivery_address.pincode || !delivery_address.state)
+      return res.status(400).json({ message: "Complete delivery address is required" });
+
     const validMethods = ["cod", "upi", "card"];
     const method = validMethods.includes(payment_method) ? payment_method : "cod";
+
+    if (method === "upi" && (!upi_id || !upi_id.includes("@")))
+      return res.status(400).json({ message: "Valid UPI ID is required for UPI payment" });
 
     await client.query("BEGIN");
 
@@ -27,10 +33,20 @@ router.post("/place", authMiddleware, async (req, res) => {
       totalAmount += Number(p.rows[0].price) * item.quantity;
     }
 
+    // Build address string for storage
+    const addressStr = `${delivery_address.fullName}, ${delivery_address.phone}, ${delivery_address.addressLine}, ${delivery_address.city} - ${delivery_address.pincode}, ${delivery_address.state}`;
+
     const orderResult = await client.query(
-      "INSERT INTO orders(user_id, status, payment_method) VALUES($1,$2,$3) RETURNING *",
-      [user_id, "completed", method]
-    );
+      "INSERT INTO orders(user_id, status, payment_method, delivery_address) VALUES($1,$2,$3,$4) RETURNING *",
+      [user_id, "completed", method, addressStr]
+    ).catch(async () => {
+      // Fallback if delivery_address column doesn't exist yet
+      return await client.query(
+        "INSERT INTO orders(user_id, status, payment_method) VALUES($1,$2,$3) RETURNING *",
+        [user_id, "completed", method]
+      );
+    });
+
     const orderId = orderResult.rows[0].id;
 
     for (const item of items) {
@@ -56,6 +72,8 @@ router.post("/place", authMiddleware, async (req, res) => {
       message: "Order placed successfully",
       orderId,
       payment_method: method,
+      delivery_address: addressStr,
+      totalAmount,
       xpEarned,
       coinsEarned,
       newXP,
@@ -67,6 +85,27 @@ router.post("/place", authMiddleware, async (req, res) => {
     res.status(500).json({ message: err.message });
   } finally {
     client.release();
+  }
+});
+
+// GET /api/orders — get user's orders
+router.get("/", authMiddleware, async (req, res) => {
+  try {
+    const user_id = req.user.id;
+    const result = await pool.query(
+      `SELECT o.id, o.status, o.payment_method, o.created_at,
+              json_agg(json_build_object('name', p.name, 'price', p.price, 'qty', oi.quantity)) AS items
+       FROM orders o
+       JOIN order_items oi ON oi.order_id = o.id
+       JOIN products p ON p.id = oi.product_id
+       WHERE o.user_id = $1
+       GROUP BY o.id ORDER BY o.created_at DESC`,
+      [user_id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 

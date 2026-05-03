@@ -260,7 +260,7 @@ body {
         </div>
         <p class="savings-msg">You save ₹<span id="save-amount">0</span> on this order</p>
 
-        <button class="checkout-btn" id="order-btn" onclick="checkout()">
+        <button class="checkout-btn" id="order-btn" onclick="goToCheckout()">
             PLACE ORDER
         </button>
     </div>
@@ -417,13 +417,27 @@ function updateSummary(cart) {
     document.getElementById("save-amount").innerText    = Math.round(discount).toLocaleString("en-IN");
 }
 
+// ── CHECKOUT → redirect to address page ──────────────────────────────────────
+function goToCheckout() {
+    const token = localStorage.getItem("token");
+    if (!token) {
+        showToast("Please login first 🔑");
+        setTimeout(() => window.location.href = "login.html", 900);
+        return;
+    }
+    const cart = getLocalCart();
+    if (!cart || cart.length === 0) {
+        showToast("Your cart is empty ⚠️");
+        return;
+    }
+    window.location.href = "checkout.html";
+}
 // ── SKELETON / TOAST ─────────────────────────────────────────────────────────
 function hideSkeleton() { const sk=document.getElementById("cart-skeleton"); if(sk) sk.style.display="none"; }
 function showToast(msg) {
     const t=document.createElement("div"); t.className="toast"; t.innerText=msg;
     document.body.appendChild(t); setTimeout(()=>t.remove(),2200);
 }
-// checkout() is intentionally NOT defined here — it lives in script.js and opens the payment modal
 </script>
 
 </body>

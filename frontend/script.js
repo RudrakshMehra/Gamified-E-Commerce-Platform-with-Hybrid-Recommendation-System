@@ -188,55 +188,137 @@ function showPaymentModal(cart) {
   document.getElementById("payment-modal")?.remove();
 
   const total = cart.reduce((s,i)=>s+(Number(i.price)*(i.quantity||i.qty||1)),0);
+  const user = getUser();
 
   const modal = document.createElement("div");
   modal.id = "payment-modal";
   modal.style.cssText = `
     position:fixed;inset:0;background:rgba(0,0,0,0.6);
-    display:flex;align-items:center;justify-content:center;z-index:9999;`;
+    display:flex;align-items:center;justify-content:center;z-index:9999;
+    padding:16px;box-sizing:border-box;`;
 
   modal.innerHTML = `
-    <div style="background:white;border-radius:16px;padding:32px;width:90%;max-width:420px;font-family:Arial,sans-serif;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-      <h2 style="margin:0 0 6px;font-size:20px;color:#1a1a2e;">Choose Payment Method</h2>
-      <p style="color:#666;margin:0 0 24px;font-size:14px;">Total: <strong style="color:#212121;">₹${Math.round(total).toLocaleString("en-IN")}</strong></p>
+    <div style="background:white;border-radius:16px;padding:28px 28px 24px;width:100%;max-width:460px;
+      font-family:Arial,sans-serif;box-shadow:0 20px 60px rgba(0,0,0,0.3);
+      max-height:90vh;overflow-y:auto;">
 
-      <div id="payment-options" style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px;">
-
-        <label id="opt-cod" style="display:flex;align-items:center;gap:14px;border:2px solid #e0e0e0;border-radius:10px;padding:14px 16px;cursor:pointer;transition:.2s;">
-          <input type="radio" name="payment" value="cod" checked style="accent-color:#fb641b;width:18px;height:18px;">
-          <div>
-            <div style="font-weight:700;font-size:15px;">💵 Cash on Delivery</div>
-            <div style="font-size:12px;color:#888;margin-top:2px;">Pay when your order arrives</div>
-          </div>
-        </label>
-
-        <label id="opt-upi" style="display:flex;align-items:center;gap:14px;border:2px solid #e0e0e0;border-radius:10px;padding:14px 16px;cursor:pointer;transition:.2s;">
-          <input type="radio" name="payment" value="upi" style="accent-color:#fb641b;width:18px;height:18px;">
-          <div>
-            <div style="font-weight:700;font-size:15px;">📱 UPI</div>
-            <div style="font-size:12px;color:#888;margin-top:2px;">Google Pay, PhonePe, Paytm, etc.</div>
-          </div>
-        </label>
-
+      <!-- Step indicator -->
+      <div style="display:flex;align-items:center;gap:0;margin-bottom:24px;">
+        <div id="step-indicator-1" style="flex:1;text-align:center;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#fb641b;color:white;
+            display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;">1</div>
+          <div style="font-size:11px;color:#fb641b;font-weight:600;margin-top:4px;">Delivery</div>
+        </div>
+        <div style="flex:1;height:2px;background:#e0e0e0;margin-bottom:16px;"></div>
+        <div id="step-indicator-2" style="flex:1;text-align:center;">
+          <div id="step2-circle" style="width:28px;height:28px;border-radius:50%;background:#e0e0e0;color:#999;
+            display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;">2</div>
+          <div id="step2-label" style="font-size:11px;color:#999;font-weight:600;margin-top:4px;">Payment</div>
+        </div>
       </div>
 
-      <!-- UPI ID input (shown only when UPI is selected) -->
-      <div id="upi-input-box" style="display:none;margin-bottom:20px;">
-        <label style="font-size:13px;font-weight:600;color:#444;display:block;margin-bottom:6px;">Enter UPI ID</label>
-        <input id="upi-id" type="text" placeholder="yourname@upi"
-          style="width:100%;padding:11px 14px;border:1.5px solid #d0d0d0;border-radius:8px;font-size:14px;box-sizing:border-box;outline:none;">
-        <div id="upi-error" style="color:#e53e3e;font-size:12px;margin-top:4px;"></div>
+      <!-- STEP 1: Delivery Address -->
+      <div id="step-1">
+        <h2 style="margin:0 0 4px;font-size:18px;color:#1a1a2e;">📍 Delivery Address</h2>
+        <p style="color:#666;margin:0 0 18px;font-size:13px;">Where should we deliver your order?</p>
+
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div>
+            <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px;">Full Name *</label>
+            <input id="addr-name" type="text" placeholder="Enter your full name"
+              value="${user?.name||''}"
+              style="width:100%;padding:10px 13px;border:1.5px solid #d0d0d0;border-radius:8px;font-size:14px;box-sizing:border-box;outline:none;">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px;">Phone Number *</label>
+            <input id="addr-phone" type="tel" placeholder="10-digit mobile number"
+              style="width:100%;padding:10px 13px;border:1.5px solid #d0d0d0;border-radius:8px;font-size:14px;box-sizing:border-box;outline:none;">
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px;">Address Line *</label>
+            <input id="addr-line" type="text" placeholder="House No., Street, Area"
+              style="width:100%;padding:10px 13px;border:1.5px solid #d0d0d0;border-radius:8px;font-size:14px;box-sizing:border-box;outline:none;">
+          </div>
+          <div style="display:flex;gap:10px;">
+            <div style="flex:1;">
+              <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px;">City *</label>
+              <input id="addr-city" type="text" placeholder="City"
+                style="width:100%;padding:10px 13px;border:1.5px solid #d0d0d0;border-radius:8px;font-size:14px;box-sizing:border-box;outline:none;">
+            </div>
+            <div style="flex:1;">
+              <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px;">Pincode *</label>
+              <input id="addr-pin" type="text" placeholder="6-digit pincode" maxlength="6"
+                style="width:100%;padding:10px 13px;border:1.5px solid #d0d0d0;border-radius:8px;font-size:14px;box-sizing:border-box;outline:none;">
+            </div>
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px;">State *</label>
+            <input id="addr-state" type="text" placeholder="State"
+              style="width:100%;padding:10px 13px;border:1.5px solid #d0d0d0;border-radius:8px;font-size:14px;box-sizing:border-box;outline:none;">
+          </div>
+          <div id="addr-error" style="color:#e53e3e;font-size:12px;display:none;padding:6px 10px;background:#fff5f5;border-radius:6px;"></div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:20px;">
+          <button onclick="document.getElementById('payment-modal').remove()"
+            style="flex:1;padding:12px;border:1.5px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:14px;font-weight:600;color:#555;">
+            Cancel
+          </button>
+          <button onclick="goToPaymentStep()"
+            style="flex:2;padding:12px;background:#2874f0;color:white;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">
+            Continue to Payment →
+          </button>
+        </div>
       </div>
 
-      <div style="display:flex;gap:10px;">
-        <button onclick="document.getElementById('payment-modal').remove()"
-          style="flex:1;padding:13px;border:1.5px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:14px;font-weight:600;color:#555;">
-          Cancel
-        </button>
-        <button id="confirm-pay-btn" onclick="confirmPayment()"
-          style="flex:2;padding:13px;background:#fb641b;color:white;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;">
-          Confirm &amp; Place Order
-        </button>
+      <!-- STEP 2: Payment Method (hidden initially) -->
+      <div id="step-2" style="display:none;">
+        <h2 style="margin:0 0 4px;font-size:18px;color:#1a1a2e;">💳 Payment Method</h2>
+        <p style="color:#666;margin:0 0 4px;font-size:13px;">Total: <strong style="color:#212121;">₹${Math.round(total).toLocaleString("en-IN")}</strong></p>
+
+        <!-- Delivery address summary -->
+        <div id="addr-summary" style="background:#f0f7ff;border:1px solid #bcd6f7;border-radius:8px;
+          padding:10px 14px;margin-bottom:18px;font-size:13px;color:#333;line-height:1.6;">
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
+
+          <label id="opt-cod" style="display:flex;align-items:center;gap:14px;border:2px solid #e0e0e0;border-radius:10px;padding:14px 16px;cursor:pointer;transition:.2s;">
+            <input type="radio" name="payment" value="cod" checked style="accent-color:#fb641b;width:18px;height:18px;">
+            <div>
+              <div style="font-weight:700;font-size:15px;">💵 Cash on Delivery</div>
+              <div style="font-size:12px;color:#888;margin-top:2px;">Pay when your order arrives</div>
+            </div>
+          </label>
+
+          <label id="opt-upi" style="display:flex;align-items:center;gap:14px;border:2px solid #e0e0e0;border-radius:10px;padding:14px 16px;cursor:pointer;transition:.2s;">
+            <input type="radio" name="payment" value="upi" style="accent-color:#fb641b;width:18px;height:18px;">
+            <div>
+              <div style="font-weight:700;font-size:15px;">📱 UPI</div>
+              <div style="font-size:12px;color:#888;margin-top:2px;">Google Pay, PhonePe, Paytm, etc.</div>
+            </div>
+          </label>
+
+        </div>
+
+        <!-- UPI ID input (shown only when UPI is selected) -->
+        <div id="upi-input-box" style="display:none;margin-bottom:16px;">
+          <label style="font-size:13px;font-weight:600;color:#444;display:block;margin-bottom:6px;">Enter UPI ID</label>
+          <input id="upi-id" type="text" placeholder="yourname@upi"
+            style="width:100%;padding:11px 14px;border:1.5px solid #d0d0d0;border-radius:8px;font-size:14px;box-sizing:border-box;outline:none;">
+          <div id="upi-error" style="color:#e53e3e;font-size:12px;margin-top:4px;"></div>
+        </div>
+
+        <div style="display:flex;gap:10px;">
+          <button onclick="goBackToAddress()"
+            style="flex:1;padding:12px;border:1.5px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:14px;font-weight:600;color:#555;">
+            ← Back
+          </button>
+          <button id="confirm-pay-btn" onclick="confirmPayment()"
+            style="flex:2;padding:12px;background:#fb641b;color:white;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;">
+            ✅ Place Order
+          </button>
+        </div>
       </div>
     </div>`;
 
@@ -250,17 +332,69 @@ function showPaymentModal(cart) {
       document.getElementById("upi-input-box").style.display = radio.value==="upi" ? "block" : "none";
     });
   });
-  // Highlight COD by default
-  document.getElementById("opt-cod").style.borderColor="#fb641b";
 
   // Store cart reference on modal for confirmPayment
   modal._cart = cart;
+}
+
+function goToPaymentStep() {
+  // Validate address fields
+  const name  = document.getElementById("addr-name").value.trim();
+  const phone = document.getElementById("addr-phone").value.trim();
+  const line  = document.getElementById("addr-line").value.trim();
+  const city  = document.getElementById("addr-city").value.trim();
+  const pin   = document.getElementById("addr-pin").value.trim();
+  const state = document.getElementById("addr-state").value.trim();
+  const errEl = document.getElementById("addr-error");
+
+  if (!name || !phone || !line || !city || !pin || !state) {
+    errEl.innerText = "Please fill in all required fields.";
+    errEl.style.display = "block"; return;
+  }
+  if (!/^\d{10}$/.test(phone)) {
+    errEl.innerText = "Please enter a valid 10-digit phone number.";
+    errEl.style.display = "block"; return;
+  }
+  if (!/^\d{6}$/.test(pin)) {
+    errEl.innerText = "Please enter a valid 6-digit pincode.";
+    errEl.style.display = "block"; return;
+  }
+  errEl.style.display = "none";
+
+  // Store address on modal
+  const modal = document.getElementById("payment-modal");
+  modal._address = { name, phone, line, city, pin, state };
+
+  // Show address summary in step 2
+  document.getElementById("addr-summary").innerHTML =
+    `📦 <strong>${name}</strong> · ${phone}<br>${line}, ${city} - ${pin}, ${state}`;
+
+  // Activate step 2 indicator
+  document.getElementById("step2-circle").style.background = "#fb641b";
+  document.getElementById("step2-circle").style.color = "white";
+  document.getElementById("step2-label").style.color = "#fb641b";
+
+  // Switch steps
+  document.getElementById("step-1").style.display = "none";
+  document.getElementById("step-2").style.display = "block";
+
+  // Highlight COD by default
+  document.getElementById("opt-cod").style.borderColor = "#fb641b";
+}
+
+function goBackToAddress() {
+  document.getElementById("step-1").style.display = "block";
+  document.getElementById("step-2").style.display = "none";
+  document.getElementById("step2-circle").style.background = "#e0e0e0";
+  document.getElementById("step2-circle").style.color = "#999";
+  document.getElementById("step2-label").style.color = "#999";
 }
 
 async function confirmPayment() {
   const modal = document.getElementById("payment-modal");
   const selectedMethod = modal.querySelector("input[name='payment']:checked")?.value || "cod";
   const cart = modal._cart;
+  const address = modal._address;
 
   // Validate UPI ID if UPI selected
   if (selectedMethod === "upi") {
@@ -277,11 +411,14 @@ async function confirmPayment() {
   btn.innerText = "Placing order…";
 
   const items = cart.map(i=>({ product_id: i.product_id??i.id, quantity: i.quantity??i.qty??1 }));
+  const deliveryAddress = address
+    ? `${address.line}, ${address.city} - ${address.pin}, ${address.state}`
+    : "";
 
   try {
     const result = await apiRequest("/orders/place", {
       method:"POST",
-      body:JSON.stringify({ items, payment_method: selectedMethod }),
+      body:JSON.stringify({ items, payment_method: selectedMethod, delivery_address: deliveryAddress }),
     });
 
     modal.remove();
@@ -302,7 +439,10 @@ async function confirmPayment() {
       document.getElementById("cart-items").style.display="none";
       document.getElementById("order-btn")?.style && (document.getElementById("order-btn").style.display="none");
       const detail = document.getElementById("order-detail");
-      if (detail) detail.innerText = `Order #${result.orderId} confirmed via ${methodLabel}. You earned ${result.xpEarned} XP! 🎮`;
+      if (detail) detail.innerHTML = `
+        Order #${result.orderId} confirmed via <strong>${methodLabel}</strong>.<br>
+        📍 Delivering to: ${deliveryAddress}<br>
+        🎮 You earned <strong>${result.xpEarned} XP</strong>!`;
       successEl.style.display="block";
     } else {
       await displayCart();
@@ -310,7 +450,7 @@ async function confirmPayment() {
     }
   } catch(err) {
     btn.disabled = false;
-    btn.innerText = "Confirm & Place Order";
+    btn.innerText = "✅ Place Order";
     showToast("Order failed: "+err.message);
     console.error(err);
   }

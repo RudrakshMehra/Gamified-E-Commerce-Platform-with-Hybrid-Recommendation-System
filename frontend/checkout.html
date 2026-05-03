@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Delivery Address | ShopXP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+/* ── Reset & Variables ─────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink:       #0f0f14;
+  --ink2:      #3a3a4a;
+  --ink3:      #7a7a92;
+  --paper:     #fafaf8;
+  --surface:   #ffffff;
+  --accent:    #5b4ef8;
+  --accent2:   #ff5c35;
+  --ok:        #10b981;
+  --border:    #e8e8f0;
+  --shadow:    0 2px 16px rgba(91,78,248,0.08);
+  --shadow-lg: 0 8px 40px rgba(15,15,20,0.12);
+  --r:         14px;
+  --font:      'Sora', sans-serif;
+  --mono:      'Space Mono', monospace;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Decorative bg */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: -1;
+  background:
+    radial-gradient(ellipse 900px 600px at 20% -10%, rgba(91,78,248,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 600px 500px at 90% 100%, rgba(255,92,53,0.05) 0%, transparent 70%);
+}
+
+/* ── Navbar ───────────────────────────────────────────── */
+.navbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 40px;
+  height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+  backdrop-filter: blur(8px);
+}
+.navbar-brand {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 700; font-size: 18px; color: var(--ink);
+  text-decoration: none;
+}
+.navbar-brand span {
+  display: inline-block;
+  width: 32px; height: 32px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 16px;
+}
+.navbar-back {
+  font-size: 13px; color: var(--accent);
+  text-decoration: none; font-weight: 600;
+  display: flex; align-items: center; gap: 6px;
+  transition: gap 0.2s;
+}
+.navbar-back:hover { gap: 10px; }
+
+/* ── Progress Steps ──────────────────────────────────── */
+.progress-wrap {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 18px 40px;
+}
+.progress-steps {
+  max-width: 760px; margin: 0 auto;
+  display: flex; align-items: center; gap: 0;
+}
+.step {
+  display: flex; align-items: center; gap: 10px;
+  flex: 1;
+}
+.step-num {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px; font-family: var(--mono);
+  flex-shrink: 0; transition: all 0.3s;
+}
+.step.active .step-num   { background: var(--accent); color: white; }
+.step.done .step-num     { background: var(--ok); color: white; }
+.step.inactive .step-num { background: var(--border); color: var(--ink3); }
+.step-label { font-size: 12px; font-weight: 600; }
+.step.active .step-label   { color: var(--accent); }
+.step.done .step-label     { color: var(--ok); }
+.step.inactive .step-label { color: var(--ink3); }
+.step-line {
+  flex: 1; height: 2px; background: var(--border);
+  margin: 0 12px; border-radius: 2px;
+}
+.step-line.done { background: var(--ok); }
+
+/* ── Main layout ─────────────────────────────────────── */
+.main {
+  max-width: 1000px; margin: 36px auto 60px;
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 768px) {
+  .main { grid-template-columns: 1fr; }
+  .navbar { padding: 0 20px; }
+  .progress-wrap { padding: 14px 20px; }
+}
+
+/* ── Card ────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.card-header {
+  padding: 22px 28px 0;
+  display: flex; align-items: center; gap: 14px;
+}
+.card-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: linear-gradient(135deg, #f0edff 0%, #e8e4ff 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+.card-header h2 { font-size: 18px; font-weight: 700; color: var(--ink); }
+.card-header p  { font-size: 13px; color: var(--ink3); margin-top: 2px; }
+.card-body { padding: 24px 28px 28px; }
+
+/* ── Form ────────────────────────────────────────────── */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-grid .full { grid-column: 1 / -1; }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink3);
+}
+.field input, .field select {
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-family: var(--font); font-size: 14px; color: var(--ink);
+  background: var(--surface);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+  width: 100%;
+}
+.field input::placeholder { color: var(--ink3); }
+.field input:focus, .field select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(91,78,248,0.1);
+}
+.field input.error { border-color: #ef4444; }
+.field-error {
+  font-size: 11px; color: #ef4444; font-weight: 500;
+  display: none;
+}
+.field-error.show { display: block; }
+
+/* Saved address chips */
+.saved-section { margin-bottom: 20px; }
+.saved-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink3);
+  margin-bottom: 10px; display: block;
+}
+.saved-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.saved-chip {
+  padding: 8px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px; font-weight: 600; color: var(--ink2);
+  cursor: pointer; background: var(--surface);
+  transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+}
+.saved-chip:hover { border-color: var(--accent); color: var(--accent); }
+.saved-chip.active { border-color: var(--accent); background: #f0edff; color: var(--accent); }
+
+/* Address type tabs */
+.type-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+.type-tab {
+  flex: 1; padding: 11px;
+  border: 1.5px solid var(--border); border-radius: 10px;
+  text-align: center; cursor: pointer;
+  font-size: 13px; font-weight: 600;
+  color: var(--ink3); background: var(--surface);
+  transition: all 0.2s;
+}
+.type-tab.active { border-color: var(--accent); background: #f0edff; color: var(--accent); }
+
+/* Submit button */
+.btn-primary {
+  width: 100%;
+  padding: 15px;
+  background: var(--accent);
+  color: white; border: none;
+  border-radius: 11px;
+  font-family: var(--font); font-size: 15px; font-weight: 700;
+  cursor: pointer; letter-spacing: 0.02em;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
+  box-shadow: 0 4px 20px rgba(91,78,248,0.3);
+  margin-top: 24px;
+}
+.btn-primary:hover  { background: #4a3ef0; box-shadow: 0 6px 28px rgba(91,78,248,0.4); transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.btn-arrow { font-size: 18px; transition: transform 0.2s; }
+.btn-primary:hover .btn-arrow { transform: translateX(4px); }
+
+/* ── Order Summary ───────────────────────────────────── */
+.summary-card .card-header { margin-bottom: 0; }
+.summary-items { max-height: 220px; overflow-y: auto; margin: 16px 0; }
+.summary-items::-webkit-scrollbar { width: 4px; }
+.summary-items::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.summary-item {
+  display: flex; gap: 12px; padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.summary-item:last-child { border-bottom: none; }
+.summary-item img {
+  width: 48px; height: 48px; object-fit: contain;
+  border-radius: 8px; background: var(--paper);
+  border: 1px solid var(--border); flex-shrink: 0;
+}
+.summary-item-info { flex: 1; }
+.summary-item-info h4 { font-size: 13px; font-weight: 600; color: var(--ink); line-height: 1.3; }
+.summary-item-info p  { font-size: 12px; color: var(--ink3); margin-top: 2px; }
+.summary-item-price   { font-size: 13px; font-weight: 700; font-family: var(--mono); color: var(--ink); }
+
+.summary-divider { height: 1px; background: var(--border); margin: 14px 0; }
+.summary-row {
+  display: flex; justify-content: space-between; align-items: center;
+  margin: 8px 0; font-size: 13px; color: var(--ink2);
+}
+.summary-row.total {
+  font-size: 16px; font-weight: 700; color: var(--ink);
+  padding-top: 8px; border-top: 1.5px solid var(--ink);
+}
+.summary-row .savings { color: var(--ok); font-weight: 600; font-size: 12px; }
+
+.trust-badges {
+  margin-top: 20px; padding-top: 16px;
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.trust-badge {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--ink3);
+}
+.trust-badge span { font-size: 15px; }
+
+/* ── Toast ───────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 28px; right: 28px; z-index: 9999;
+  background: var(--ink); color: white;
+  padding: 13px 20px; border-radius: 12px;
+  font-size: 14px; font-weight: 500;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+  display: flex; align-items: center; gap: 8px;
+  animation: slideUp 0.3s ease;
+}
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 540px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .form-grid .full { grid-column: 1; }
+}
+</style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <a href="index.html" class="navbar-brand">
+    <span>🛍</span> ShopXP
+  </a>
+  <a href="cart.html" class="navbar-back">← Back to Cart</a>
+</nav>
+
+<!-- Progress Steps -->
+<div class="progress-wrap">
+  <div class="progress-steps">
+    <div class="step active">
+      <div class="step-num">1</div>
+      <div>
+        <div class="step-label">Delivery Address</div>
+      </div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step inactive">
+      <div class="step-num">2</div>
+      <div>
+        <div class="step-label">Payment</div>
+      </div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step inactive">
+      <div class="step-num">3</div>
+      <div>
+        <div class="step-label">Confirmation</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- LEFT: Address Form -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon">📍</div>
+      <div>
+        <h2>Delivery Address</h2>
+        <p>Where should we deliver your order?</p>
+      </div>
+    </div>
+    <div class="card-body">
+
+      <!-- Address type -->
+      <div class="type-tabs">
+        <div class="type-tab active" onclick="selectType(this, 'home')">🏠 Home</div>
+        <div class="type-tab" onclick="selectType(this, 'work')">💼 Work</div>
+        <div class="type-tab" onclick="selectType(this, 'other')">📌 Other</div>
+      </div>
+
+      <!-- Form -->
+      <div class="form-grid">
+
+        <div class="field">
+          <label>Full Name *</label>
+          <input type="text" id="f-name" placeholder="Rahul Sharma" autocomplete="name">
+          <span class="field-error" id="e-name">Please enter your full name</span>
+        </div>
+
+        <div class="field">
+          <label>Phone Number *</label>
+          <input type="tel" id="f-phone" placeholder="98XXXXXXXX" maxlength="10" autocomplete="tel">
+          <span class="field-error" id="e-phone">Enter a valid 10-digit number</span>
+        </div>
+
+        <div class="field full">
+          <label>Address Line 1 *</label>
+          <input type="text" id="f-line1" placeholder="House No., Street, Area" autocomplete="address-line1">
+          <span class="field-error" id="e-line1">Please enter your address</span>
+        </div>
+
+        <div class="field full">
+          <label>Address Line 2 <span style="color:var(--ink3);font-weight:400;">(Landmark / Apartment)</span></label>
+          <input type="text" id="f-line2" placeholder="Landmark, Apartment, Floor (optional)" autocomplete="address-line2">
+        </div>
+
+        <div class="field">
+          <label>City *</label>
+          <input type="text" id="f-city" placeholder="Mumbai" autocomplete="address-level2">
+          <span class="field-error" id="e-city">Please enter your city</span>
+        </div>
+
+        <div class="field">
+          <label>Pincode *</label>
+          <input type="text" id="f-pin" placeholder="400001" maxlength="6" autocomplete="postal-code">
+          <span class="field-error" id="e-pin">Enter a valid 6-digit pincode</span>
+        </div>
+
+        <div class="field">
+          <label>State *</label>
+          <select id="f-state" autocomplete="address-level1">
+            <option value="">Select State</option>
+            <option>Andhra Pradesh</option><option>Arunachal Pradesh</option>
+            <option>Assam</option><option>Bihar</option><option>Chhattisgarh</option>
+            <option>Goa</option><option>Gujarat</option><option>Haryana</option>
+            <option>Himachal Pradesh</option><option>Jharkhand</option><option>Karnataka</option>
+            <option>Kerala</option><option>Madhya Pradesh</option><option>Maharashtra</option>
+            <option>Manipur</option><option>Meghalaya</option><option>Mizoram</option>
+            <option>Nagaland</option><option>Odisha</option><option>Punjab</option>
+            <option>Rajasthan</option><option>Sikkim</option><option>Tamil Nadu</option>
+            <option>Telangana</option><option>Tripura</option><option>Uttar Pradesh</option>
+            <option>Uttarakhand</option><option>West Bengal</option>
+            <option>Delhi</option><option>Jammu &amp; Kashmir</option>
+            <option>Ladakh</option><option>Chandigarh</option><option>Puducherry</option>
+          </select>
+          <span class="field-error" id="e-state">Please select your state</span>
+        </div>
+
+        <div class="field">
+          <label>Address Type</label>
+          <input type="text" id="f-type" value="Home" readonly
+            style="background:var(--paper);color:var(--ink3);cursor:default;">
+        </div>
+
+      </div>
+
+      <button class="btn-primary" onclick="proceedToPayment()">
+        Continue to Payment <span class="btn-arrow">→</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- RIGHT: Order Summary -->
+  <div class="card summary-card">
+    <div class="card-header">
+      <div class="card-icon" style="background:linear-gradient(135deg,#fff4f1,#ffe4dc);">🧾</div>
+      <div>
+        <h2>Order Summary</h2>
+        <p id="item-count">Loading items…</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="summary-items" id="summary-items">
+        <!-- filled by JS -->
+      </div>
+
+      <div class="summary-divider"></div>
+
+      <div class="summary-row">
+        <span>MRP Total</span>
+        <span id="s-mrp">₹0</span>
+      </div>
+      <div class="summary-row">
+        <span>Discount</span>
+        <span class="savings" id="s-disc">- ₹0</span>
+      </div>
+      <div class="summary-row">
+        <span>Delivery</span>
+        <span style="color:var(--ok);font-weight:600;">FREE</span>
+      </div>
+      <div class="summary-row total">
+        <span>Total</span>
+        <span id="s-total">₹0</span>
+      </div>
+
+      <div class="trust-badges">
+        <div class="trust-badge"><span>🔒</span> 100% Secure Checkout</div>
+        <div class="trust-badge"><span>🚚</span> Free delivery on all orders</div>
+        <div class="trust-badge"><span>🔄</span> Easy 7-day returns</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Config ───────────────────────────────────────────────
+const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '')
+  ? 'http://localhost:5000/api' : '/api';
+const UPLOADS = API.replace('/api', '/uploads');
+const token = localStorage.getItem('token');
+
+// ── Address type ─────────────────────────────────────────
+let addressType = 'home';
+function selectType(el, type) {
+  document.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  addressType = type;
+  document.getElementById('f-type').value = type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+// ── Auth guard ────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  if (!token) { window.location.href = 'login.html'; return; }
+  prefillUser();
+  loadSummary();
+});
+
+function prefillUser() {
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user.name) document.getElementById('f-name').value = user.name;
+  } catch {}
+}
+
+// ── Load cart & build summary ─────────────────────────────
+async function loadSummary() {
+  const container = document.getElementById('summary-items');
+  let cart = [];
+  try {
+    const res = await fetch(`${API}/cart`, { headers: { Authorization: `Bearer ${token}` } });
+    cart = await res.json();
+  } catch {
+    cart = JSON.parse(localStorage.getItem('cart') || '[]');
+  }
+
+  if (!cart || cart.length === 0) {
+    container.innerHTML = '<p style="color:var(--ink3);font-size:13px;">Your cart is empty</p>';
+    return;
+  }
+
+  // Normalise
+  cart = cart.map(i => ({
+    id: i.product_id || i.id,
+    name: i.name || 'Product',
+    price: parseFloat(i.price || 0),
+    mrp: parseFloat(i.mrp || i.price || 0) * 1.15,
+    image: i.image || '',
+    qty: parseInt(i.quantity || i.qty || 1)
+  }));
+
+  // Save normalised cart for payment page
+  localStorage.setItem('cart', JSON.stringify(cart));
+  document.getElementById('item-count').textContent = cart.length + ' item' + (cart.length > 1 ? 's' : '');
+
+  let mrpTotal = 0, paidTotal = 0;
+  container.innerHTML = '';
+  cart.forEach(item => {
+    mrpTotal  += item.mrp * item.qty;
+    paidTotal += item.price * item.qty;
+    const imgSrc = item.image ? `${UPLOADS}/${item.image}` : `https://placehold.co/48x48?text=${encodeURIComponent(item.name[0])}`;
+    const div = document.createElement('div');
+    div.className = 'summary-item';
+    div.innerHTML = `
+      <img src="${imgSrc}" alt="${item.name}" onerror="this.src='https://placehold.co/48x48?text=P'">
+      <div class="summary-item-info">
+        <h4>${item.name}</h4>
+        <p>Qty: ${item.qty}</p>
+      </div>
+      <div class="summary-item-price">₹${(item.price * item.qty).toLocaleString('en-IN')}</div>`;
+    container.appendChild(div);
+  });
+
+  const disc = mrpTotal - paidTotal;
+  document.getElementById('s-mrp').textContent   = '₹' + Math.round(mrpTotal).toLocaleString('en-IN');
+  document.getElementById('s-disc').textContent   = '- ₹' + Math.round(disc).toLocaleString('en-IN');
+  document.getElementById('s-total').textContent  = '₹' + Math.round(paidTotal).toLocaleString('en-IN');
+}
+
+// ── Validation & proceed ──────────────────────────────────
+function showErr(id, msg) {
+  const inp = document.getElementById('f-' + id.replace('e-', ''));
+  if (inp) inp.classList.add('error');
+  const err = document.getElementById('e-' + id.replace('e-', ''));
+  if (err) { if (msg) err.textContent = msg; err.classList.add('show'); }
+}
+function clearErr(id) {
+  const inp = document.getElementById('f-' + id);
+  if (inp) inp.classList.remove('error');
+  const err = document.getElementById('e-' + id);
+  if (err) err.classList.remove('show');
+}
+
+function proceedToPayment() {
+  let valid = true;
+  const fields = ['name', 'phone', 'line1', 'city', 'pin', 'state'];
+  fields.forEach(f => clearErr(f));
+
+  const name  = document.getElementById('f-name').value.trim();
+  const phone = document.getElementById('f-phone').value.trim();
+  const line1 = document.getElementById('f-line1').value.trim();
+  const line2 = document.getElementById('f-line2').value.trim();
+  const city  = document.getElementById('f-city').value.trim();
+  const pin   = document.getElementById('f-pin').value.trim();
+  const state = document.getElementById('f-state').value;
+
+  if (!name)            { showErr('e-name',  'Please enter your full name'); valid = false; }
+  if (!/^\d{10}$/.test(phone)) { showErr('e-phone', 'Enter a valid 10-digit number'); valid = false; }
+  if (!line1)           { showErr('e-line1', 'Please enter your address'); valid = false; }
+  if (!city)            { showErr('e-city',  'Please enter your city'); valid = false; }
+  if (!/^\d{6}$/.test(pin))  { showErr('e-pin',   'Enter a valid 6-digit pincode'); valid = false; }
+  if (!state)           { showErr('e-state', 'Please select your state'); valid = false; }
+
+  if (!valid) { showToast('⚠️ Please fill all required fields'); return; }
+
+  // Save address to sessionStorage
+  const address = { fullName: name, phone, addressLine: line1 + (line2 ? ', ' + line2 : ''), city, pincode: pin, state, type: addressType };
+  sessionStorage.setItem('deliveryAddress', JSON.stringify(address));
+
+  // Navigate to payment
+  window.location.href = 'payment.html';
+}
+
+// ── Toast ─────────────────────────────────────────────────
+function showToast(msg) {
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// Live phone validation — numbers only
+document.getElementById('f-phone').addEventListener('input', function() {
+  this.value = this.value.replace(/\D/g, '').slice(0, 10);
+});
+document.getElementById('f-pin').addEventListener('input', function() {
+  this.value = this.value.replace(/\D/g, '').slice(0, 6);
+});
+</script>
+
+</body>
+</html>
