@@ -459,36 +459,97 @@ async function confirmPayment() {
 // =============================================
 // PRODUCTS  →  GET /api/products
 // =============================================
+
+// Map index-page category filter keys → possible DB category values (case-insensitive)
+const CATEGORY_MAP = {
+  fashion:     ["fashion","clothing","clothes","men","women","apparel","dress","shirt","kurta","jeans","saree"],
+  mobiles:     ["mobiles","mobile","smartphone","phone","phones","smartphones"],
+  beauty:      ["beauty","skincare","cosmetics","makeup","personal care","grooming","fragrance","perfume"],
+  electronics: ["electronics","electronic","laptop","laptops","computer","tablet","camera","audio","headphone","earphone","tv","television","gadget"],
+  appliances:  ["appliances","appliance","kitchen","home appliance","washing machine","refrigerator","microwave","ac","air conditioner"]
+};
+
+function matchCategory(dbCat, filterKey) {
+  if (!dbCat) return false;
+  const lower = dbCat.toLowerCase().trim();
+  const keys = CATEGORY_MAP[filterKey] || [filterKey];
+  return keys.some(k => lower.includes(k) || k.includes(lower));
+}
+
 async function loadProducts() {
-  const container = document.getElementById("products");
+  const isIndexPage = !!document.getElementById("products");
+  const isProductsPage = !!document.getElementById("products-grid");
+  const container = document.getElementById("products") || document.getElementById("products-grid");
   if (!container) return;
-  container.innerHTML=`<p style="color:#888;padding:20px;grid-column:1/-1">Loading products…</p>`;
+
+  container.innerHTML = `<p style="color:#888;padding:20px;grid-column:1/-1">Loading products…</p>`;
   try {
     const products = await apiRequest("/products");
     if (!products.length) {
-      container.innerHTML=`<p style="color:#888;padding:20px;grid-column:1/-1">No products found. Run the seed SQL.</p>`;
+      container.innerHTML = `<p style="color:#888;padding:20px;grid-column:1/-1">No products found. Run the seed SQL.</p>`;
       return;
     }
     DB_PRODUCTS_CACHE = products;
-    renderProductCards(container, products);
+
+    if (isIndexPage) {
+      renderIndexProducts(container, products);
+    } else {
+      renderProductCards(container, products);
+    }
   } catch(err) {
-    console.error("loadProducts:",err);
-    container.innerHTML=`<p style="color:#c00;padding:20px;grid-column:1/-1">Could not load products — is the backend running on port 5000?</p>`;
+    console.error("loadProducts:", err);
+    container.innerHTML = `<p style="color:#c00;padding:20px;grid-column:1/-1">Could not load products — is the backend running on port 5000?</p>`;
   }
 }
 
+// ── Index page: render with category sections ─────────────────────────────────
+function renderIndexProducts(container, products) {
+  container.innerHTML = "";
+  // store all for filter
+  container.setAttribute("data-loaded", "true");
+
+  // Render all products as flat grid (category filter shows/hides)
+  products.forEach(p => {
+    const card = buildIndexCard(p);
+    container.appendChild(card);
+  });
+}
+
+function buildIndexCard(p) {
+  const div = document.createElement("article");
+  div.className = "product-card";
+  div.setAttribute("data-category", (p.category || "").toLowerCase().trim());
+  const imgSrc = p.image
+    ? UPLOADS_BASE + "/" + p.image
+    : "https://placehold.co/200x200?text=" + encodeURIComponent(p.name);
+  div.innerHTML = `
+    <img src="${imgSrc}" alt="${p.name}" loading="lazy"
+         onerror="this.src='https://placehold.co/200x200?text=img'">
+    <h3>${p.name}</h3>
+    <p class="price">₹${Number(p.price).toLocaleString("en-IN")}</p>
+    <div class="reward">🎯 Earn ${Math.floor(p.price / 100)} XP</div>
+    <button onclick='addToCart(${JSON.stringify({id:p.id,name:p.name,price:p.price,image:p.image})})'>
+      Add to Cart
+    </button>`;
+  return div;
+}
+
+// ── Products page flat grid ────────────────────────────────────────────────────
 function renderProductCards(container, products) {
-  container.innerHTML="";
-  products.forEach(p=>{
-    const div=document.createElement("article");
-    div.className="product-card";
-    div.setAttribute("data-category",p.category||"");
-    div.innerHTML=`
-      <img src="${p.image?UPLOADS_BASE+'/'+p.image:'https://placehold.co/200x200?text='+encodeURIComponent(p.name)}"
-           alt="${p.name}" loading="lazy" onerror="this.src='https://placehold.co/200x200?text=img'">
+  container.innerHTML = "";
+  products.forEach(p => {
+    const div = document.createElement("article");
+    div.className = "product-card";
+    div.setAttribute("data-category", (p.category || "").toLowerCase().trim());
+    const imgSrc = p.image
+      ? UPLOADS_BASE + "/" + p.image
+      : "https://placehold.co/200x200?text=" + encodeURIComponent(p.name);
+    div.innerHTML = `
+      <img src="${imgSrc}" alt="${p.name}" loading="lazy"
+           onerror="this.src='https://placehold.co/200x200?text=img'">
       <h3>${p.name}</h3>
       <p class="price">₹${Number(p.price).toLocaleString("en-IN")}</p>
-      <div class="reward">🎯 Earn ${Math.floor(p.price/100)} XP</div>
+      <div class="reward">🎯 Earn ${Math.floor(p.price / 100)} XP</div>
       <button onclick='addToCart(${JSON.stringify({id:p.id,name:p.name,price:p.price,image:p.image})})'>
         Add to Cart
       </button>`;
@@ -573,7 +634,7 @@ function loadProfile() {
   set("profileName",  user.name||user.email?.split("@")[0]);
   set("profileEmail", user.email);
   const xp=user.xp??parseInt(localStorage.getItem("xp"))??0;
-  const level=user.level??Math.floor(xp/500)+1;
+  const level=calcLevel(xp);  // always derive from XP, never stale user.level
   set("xpPoints",   xp);
   set("coinPoints", user.coins??0);
   const icons=["🔥","🥉","🥈","🥇","💎"];
@@ -589,33 +650,60 @@ function loadProfile() {
 // =============================================
 function loadRewards() {
   const user=getUser();
-  const xp=user?.xp??parseInt(localStorage.getItem("xp"))??0;
-  const level=user?.level??Math.floor(xp/500)+1;
+  // Always derive level from XP — never trust the stale user.level from login
+  const xp = user?.xp ?? parseInt(localStorage.getItem("xp")) ?? 0;
+  const level = calcLevel(xp);
+  // Keep user object in sync so other pages also see correct level
+  if (user && user.level !== level) {
+    user.level = level;
+    localStorage.setItem("user", JSON.stringify(user));
+  }
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.innerText=v;};
   set("xp",xp); set("levelBadge","Level "+level);
   const pct=((xp%500)/500)*100;
   const bar=document.getElementById("progressBar");
   if (bar) setTimeout(()=>bar.style.width=pct+"%",100);
-  set("nextLevelText",`${500-(xp%500)} XP to next level`);
+  set("nextLevelText",`${500-(xp%500)} XP to reach next level`);
   checkRewardAccess(level); updateCartCount();
 }
 
 function checkRewardAccess(level) {
   const claimed=JSON.parse(localStorage.getItem("claimedRewards")||"[]");
-  [2,3,5].forEach(lvl=>{
+  // Reward definitions: [rewardLevel, xpRequired]
+  const rewards = [
+    { lvl:2,  xpNeeded:500  },
+    { lvl:3,  xpNeeded:1000 },
+    { lvl:5,  xpNeeded:2000 },
+  ];
+  rewards.forEach(({lvl, xpNeeded})=>{
     const btn=document.getElementById("reward"+lvl);
     if (!btn) return;
-    if (claimed.includes(lvl)) { btn.innerText="Claimed"; btn.disabled=true; }
-    else btn.disabled=level<lvl;
+    if (claimed.includes(lvl)) {
+      btn.innerText="✅ Claimed";
+      btn.disabled=true;
+      btn.style.background="gray";
+    } else if (level >= lvl) {
+      btn.innerText="Claim 🎁";
+      btn.disabled=false;
+      btn.style.background="#22c55e";
+    } else {
+      btn.innerText=`Locked (need Lvl ${lvl})`;
+      btn.disabled=true;
+      btn.style.background="#64748b";
+    }
   });
 }
 
 function claimReward(level) {
   const claimed=JSON.parse(localStorage.getItem("claimedRewards")||"[]");
-  if (claimed.includes(level)) { alert("Already claimed!"); return; }
+  if (claimed.includes(level)) { showToast("Already claimed!"); return; }
+  // Double-check user actually has the required level
+  const xp = getXP();
+  const currentLevel = calcLevel(xp);
+  if (currentLevel < level) { showToast("You haven't reached this level yet!"); return; }
   claimed.push(level);
   localStorage.setItem("claimedRewards",JSON.stringify(claimed));
-  showToast("Reward for Level "+level+" claimed 🎉"); loadRewards();
+  showToast("🎉 Level "+level+" reward claimed!"); loadRewards();
 }
 
 // =============================================
@@ -636,23 +724,48 @@ async function sendMessage(event) {
 // XP HELPERS
 // =============================================
 function getXP() { return parseInt(localStorage.getItem("xp"))||0; }
+function calcLevel(xp) { return Math.floor(xp / 500) + 1; }
 function addXP(amount) {
   const xp=getXP()+amount; localStorage.setItem("xp",xp);
   const user=getUser();
-  if (user) { user.xp=xp; localStorage.setItem("user",JSON.stringify(user)); }
+  if (user) { user.xp=xp; user.level=calcLevel(xp); localStorage.setItem("user",JSON.stringify(user)); }
 }
 
 // =============================================
 // CATEGORY FILTER
 // =============================================
-function filterProducts(category, event) {
-  document.querySelectorAll(".product-card").forEach(card=>{
-    const cat=card.getAttribute("data-category");
-    card.style.display=(category==="all"||cat===category)?"block":"none";
+function filterProducts(category, event, label) {
+  let visibleCount = 0;
+  document.querySelectorAll("#products .product-card").forEach(card => {
+    let show = false;
+    if (category === "all") {
+      show = true;
+    } else {
+      const dbCat = card.getAttribute("data-category") || "";
+      show = matchCategory(dbCat, category);
+    }
+    card.style.display = show ? "block" : "none";
+    if (show) visibleCount++;
   });
-  document.querySelectorAll(".category").forEach(c=>c.classList.remove("active"));
+
+  // Update active category tab
+  document.querySelectorAll(".category").forEach(c => c.classList.remove("active"));
   event?.currentTarget?.classList.add("active");
-  document.getElementById("products")?.scrollIntoView({behavior:"smooth"});
+
+  // Update heading
+  const heading = document.getElementById("products-heading");
+  if (heading && label) {
+    const icons = { "All Products":"🛍️", "Fashion":"👗", "Mobiles":"📱", "Beauty":"💄", "Electronics":"💻", "Appliances":"🏠" };
+    heading.textContent = (icons[label] || "🛍️") + " " + label;
+  }
+
+  // Show/hide empty state
+  const noMsg = document.getElementById("no-products-msg");
+  if (noMsg) noMsg.style.display = visibleCount === 0 ? "block" : "none";
+
+  // Scroll to products section
+  const section = document.getElementById("products-section-wrapper") || document.getElementById("products");
+  if (section) section.scrollIntoView({ behavior: "smooth" });
 }
 
 // =============================================
@@ -691,6 +804,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (document.getElementById("cart-items"))  await displayCart();
   if (document.getElementById("profileName")) loadProfile();
   if (document.getElementById("levelBadge"))  loadRewards();
-  if (document.getElementById("products"))    await loadProducts();
+  if (document.getElementById("products") || document.getElementById("products-grid")) await loadProducts();
   await loadSuggestions();
 });

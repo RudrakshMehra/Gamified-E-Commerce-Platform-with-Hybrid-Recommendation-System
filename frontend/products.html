@@ -195,10 +195,7 @@ let allProducts     = [];  // full list from API
 let activeCategory  = "all";
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-window.onload = function() {
-    updateCartCount();
-    loadProducts();
-};
+// Initialization is handled by script.js DOMContentLoaded (detects #products-grid)
 
 // ── FETCH PRODUCTS FROM BACKEND ───────────────────────────────────────────────
 async function loadProducts() {

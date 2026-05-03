@@ -70,40 +70,49 @@
 <!-- CATEGORY BAR -->
 <section class="categories">
 
-    <div class="category active" onclick="filterProducts('all', event)">
+    <div class="category active" onclick="filterProducts('all', event, 'All Products')">
         <img src="https://cdn-icons-png.flaticon.com/512/1946/1946436.png">
         <p>All</p>
     </div> 
 
-    <div class="category" onclick="filterProducts('fashion', event)">
+    <div class="category" onclick="filterProducts('fashion', event, 'Fashion')">
         <img src="https://cdn-icons-png.flaticon.com/512/3081/3081559.png">
         <p>Fashion</p>
     </div>
 
-    <div class="category" onclick="filterProducts('mobiles', event)">
+    <div class="category" onclick="filterProducts('mobiles', event, 'Mobiles')">
         <img src="https://cdn-icons-png.flaticon.com/512/15/15874.png">
         <p>Mobiles</p>
     </div>
 
-    <div class="category" onclick="filterProducts('beauty', event)">
+    <div class="category" onclick="filterProducts('beauty', event, 'Beauty')">
         <img src="https://cdn-icons-png.flaticon.com/512/2331/2331970.png">
         <p>Beauty</p>
     </div>
 
-    <div class="category" onclick="filterProducts('electronics', event)">
+    <div class="category" onclick="filterProducts('electronics', event, 'Electronics')">
         <img src="https://cdn-icons-png.flaticon.com/512/1041/1041885.png">
         <p>Electronics</p>
     </div>
 
-    <div class="category" onclick="filterProducts('appliances', event)">
+    <div class="category" onclick="filterProducts('appliances', event, 'Appliances')">
         <img src="https://cdn-icons-png.flaticon.com/512/1995/1995574.png">
         <p>Appliances</p>
     </div>
 
 </section>
 
-<section id="products" class="products">
+<section id="products-section-wrapper">
+  <div style="display:flex; align-items:center; justify-content:space-between; padding: 30px 40px 0;">
+    <h2 id="products-heading" style="font-size:22px; font-weight:700; color:#212121;">🛍️ All Products</h2>
+    <a href="products.html" style="font-size:13px; color:#2874f0; text-decoration:none; font-weight:600;">View All →</a>
+  </div>
+  <section id="products" class="products">
     <!-- Products loaded dynamically from DB via script.js -->
+  </section>
+  <div id="no-products-msg" style="display:none; text-align:center; padding:40px; color:#888; font-size:15px;">
+    No products found in this category.
+  </div>
 </section>
 
 <!-- =========================

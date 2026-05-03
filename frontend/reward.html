@@ -130,17 +130,26 @@ body{
         <h3>🎁 Level Rewards</h3>
 
         <div class="reward-item">
-            <span>Level 2 - ₹100 Voucher</span>
+            <div>
+                <div style="font-weight:bold;">Level 2 — ₹100 Voucher</div>
+                <div style="font-size:12px;color:#94a3b8;margin-top:4px;">Requires 500 XP (Level 2)</div>
+            </div>
             <button id="reward2" onclick="claimReward(2)">Claim</button>
         </div>
 
         <div class="reward-item">
-            <span>Level 3 - Free Earphones</span>
+            <div>
+                <div style="font-weight:bold;">Level 3 — Free Earphones</div>
+                <div style="font-size:12px;color:#94a3b8;margin-top:4px;">Requires 1000 XP (Level 3)</div>
+            </div>
             <button id="reward3" onclick="claimReward(3)">Claim</button>
         </div>
 
         <div class="reward-item">
-            <span>Level 5 - ₹500 Voucher</span>
+            <div>
+                <div style="font-weight:bold;">Level 5 — ₹500 Voucher</div>
+                <div style="font-size:12px;color:#94a3b8;margin-top:4px;">Requires 2000 XP (Level 5)</div>
+            </div>
             <button id="reward5" onclick="claimReward(5)">Claim</button>
         </div>
 
@@ -153,83 +162,6 @@ body{
 </div>
 
 <script src="script.js"></script>
-
-<script>
-// ===== LOGIN CHECK =====
-const user = JSON.parse(localStorage.getItem("user"));
-if(!user){
-    window.location.href = "login.html";
-}
-
-// ===== XP SYSTEM =====
-function getXP(){
-    return parseInt(localStorage.getItem("xp")) || 0;
-}
-
-function getLevel(xp){
-    return Math.floor(xp / 500) + 1; 
-}
-
-// ===== LOAD UI =====
-function loadRewards(){
-
-    let xp = getXP();
-    let level = getLevel(xp);
-
-    document.getElementById("xp").innerText = xp;
-    document.getElementById("levelBadge").innerText = "Level " + level;
-
-    let percent = ((xp % 500) / 500) * 100;
-    document.getElementById("progressBar").style.width = percent + "%";
-
-    document.getElementById("nextLevelText").innerText =
-        (500 - (xp % 500)) + " XP to next level";
-
-    checkRewardAccess(level);
-    updateCartCount();
-}
-
-// ===== ENABLE BUTTONS =====
-function checkRewardAccess(level){
-    let claimed = JSON.parse(localStorage.getItem("claimedRewards")) || [];
-
-    [2,3,5].forEach(lvl=>{
-        let btn = document.getElementById("reward"+lvl);
-
-        if(claimed.includes(lvl)){
-            btn.innerText = "Claimed";
-            btn.disabled = true;
-        }
-        else if(level >= lvl){
-            btn.disabled = false;
-        } 
-        else {
-            btn.disabled = true;
-        }
-    });
-}
-
-// ===== CLAIM REWARD =====
-function claimReward(level){
-
-    let claimed = JSON.parse(localStorage.getItem("claimedRewards")) || [];
-
-    if(claimed.includes(level)){
-        alert("Already claimed!");
-        return;
-    }
-
-    claimed.push(level);
-    localStorage.setItem("claimedRewards", JSON.stringify(claimed));
-
-    alert("Reward for Level " + level + " claimed 🎉");
-
-    loadRewards();
-}
-
-// INIT
-document.addEventListener("DOMContentLoaded", loadRewards);
-</script>
 
 </body>
 </html>
