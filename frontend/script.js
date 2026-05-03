@@ -633,8 +633,8 @@ function loadProfile() {
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.innerText=v;};
   set("profileName",  user.name||user.email?.split("@")[0]);
   set("profileEmail", user.email);
-  const xp=user.xp??parseInt(localStorage.getItem("xp"))??0;
-  const level=calcLevel(xp);  // always derive from XP, never stale user.level
+  const xp = getXP();
+  const level = calcLevel(xp);
   set("xpPoints",   xp);
   set("coinPoints", user.coins??0);
   const icons=["🔥","🥉","🥈","🥇","💎"];
@@ -650,10 +650,10 @@ function loadProfile() {
 // =============================================
 function loadRewards() {
   const user=getUser();
-  // Always derive level from XP — never trust the stale user.level from login
-  const xp = user?.xp ?? parseInt(localStorage.getItem("xp")) ?? 0;
+  // getXP() is now the single source of truth — reads user.xp first, then cache
+  const xp = getXP();
   const level = calcLevel(xp);
-  // Keep user object in sync so other pages also see correct level
+  // Keep user object in sync
   if (user && user.level !== level) {
     user.level = level;
     localStorage.setItem("user", JSON.stringify(user));
@@ -723,12 +723,23 @@ async function sendMessage(event) {
 // =============================================
 // XP HELPERS
 // =============================================
-function getXP() { return parseInt(localStorage.getItem("xp"))||0; }
+function getXP() {
+  // user.xp is the authoritative source (synced from DB at login & after orders)
+  // localStorage("xp") is a secondary cache — may be missing if user just logged in
+  const user = getUser();
+  const fromUser = user?.xp;
+  const fromCache = parseInt(localStorage.getItem("xp"));
+  const xp = (fromUser != null ? fromUser : 0) || fromCache || 0;
+  // Keep the cache in sync so both sources agree
+  if (xp && fromCache !== xp) localStorage.setItem("xp", xp);
+  return xp;
+}
 function calcLevel(xp) { return Math.floor(xp / 500) + 1; }
 function addXP(amount) {
-  const xp=getXP()+amount; localStorage.setItem("xp",xp);
-  const user=getUser();
-  if (user) { user.xp=xp; user.level=calcLevel(xp); localStorage.setItem("user",JSON.stringify(user)); }
+  const xp = getXP() + amount;
+  localStorage.setItem("xp", xp);
+  const user = getUser();
+  if (user) { user.xp = xp; user.level = calcLevel(xp); localStorage.setItem("user", JSON.stringify(user)); }
 }
 
 // =============================================
