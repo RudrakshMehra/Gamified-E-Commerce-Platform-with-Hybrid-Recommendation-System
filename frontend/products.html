@@ -178,9 +178,12 @@
 <script src="script.js"></script>
 <script>
 // ── CONFIG ───────────────────────────────────────────────────────────────────
-const API = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://localhost:5000/api"
-    : "/api";
+const API = (
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1" ||
+    window.location.hostname === ""
+) ? "http://localhost:5000/api" : "/api";
+const UPLOADS_BASE = API.replace("/api", "/uploads");
 
 const token = localStorage.getItem("token");
 const headers = token
@@ -288,7 +291,8 @@ function buildProductCard(product) {
     const name     = product.name     || product.product_name || "Product";
     const price    = parseFloat(product.price || product.selling_price || 0);
     const mrp      = parseFloat(product.mrp   || product.original_price || price);
-    const image    = product.image    || product.image_url   || "https://via.placeholder.com/200";
+    const rawImage = product.image    || product.image_url   || "";
+    const image    = rawImage ? UPLOADS_BASE + "/" + rawImage : "https://placehold.co/200x200?text=" + encodeURIComponent(name);
     const category = product.category || "";
 
     const discountPct = mrp > price
@@ -299,7 +303,7 @@ function buildProductCard(product) {
     article.className = "product-card";
     article.innerHTML = `
         <img src="${image}" alt="${name}" loading="lazy"
-             onerror="this.src='https://via.placeholder.com/200'">
+             onerror="this.src='https://placehold.co/200x200?text=img'">
         <h3>${name}</h3>
         <p class="price">₹${price.toLocaleString("en-IN")}</p>
         ${mrp > price ? `<p class="mrp">₹${mrp.toLocaleString("en-IN")}</p>
@@ -309,7 +313,7 @@ function buildProductCard(product) {
             data-name="${name}"
             data-price="${price}"
             data-mrp="${mrp}"
-            data-image="${image}"
+            data-image="${rawImage}"
             data-category="${category}">
             Add to Cart
         </button>

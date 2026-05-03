@@ -269,9 +269,13 @@ body {
 
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-const API = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://localhost:5000/api"
-    : "/api";
+const API = (
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1" ||
+    window.location.hostname === ""
+) ? "http://localhost:5000/api" : "/api";
+
+const UPLOADS_BASE = API.replace("/api", "/uploads");
 
 const token   = localStorage.getItem("token");
 const userId  = localStorage.getItem("user_id");
@@ -304,7 +308,7 @@ async function loadCart() {
                 name:  item.name  || item.product_name || "Product",
                 price: parseFloat(item.price || item.selling_price || 0),
                 mrp:   parseFloat(item.mrp   || item.original_price || item.price || 0),
-                image: item.image || item.image_url || "https://via.placeholder.com/120",
+                image: item.image || "",
                 qty:   parseInt(item.quantity || item.qty || 1),
             }));
 
@@ -353,8 +357,8 @@ function renderCart(cart) {
         box.dataset.id = item.id;
         box.innerHTML  = `
             <div class="cart-item-left">
-                <img src="${item.image}" alt="${item.name}"
-                     onerror="this.src='https://via.placeholder.com/120'">
+                <img src="${item.image ? UPLOADS_BASE+'/'+item.image : 'https://placehold.co/120x120?text=img'}" alt="${item.name}"
+                     onerror="this.src='https://placehold.co/120x120?text=img'">
             </div>
             <div class="cart-item-center">
                 <h4>${item.name}</h4>
@@ -457,22 +461,23 @@ async function checkout() {
     btn.innerText = "Placing order…";
 
     // Build order payload
+    // Show payment modal instead of placing order directly
+    // Payment is handled by script.js showPaymentModal / confirmPayment
+    const cartForModal = getLocalCart();
+    if (typeof showPaymentModal === "function") {
+        showPaymentModal(cartForModal);
+        btn.disabled = false;
+        btn.innerText = "PLACE ORDER";
+        return;
+    }
     const orderPayload = {
-        items: cart.map(item => ({
-            product_id: item.id,
-            name:       item.name,
-            price:      item.price,
-            quantity:   item.qty || 1,
-        })),
-        total_amount: cart.reduce((sum, i) => sum + i.price * (i.qty || 1), 0),
-        // Include user_id for non-JWT backends
-        ...(userId ? { user_id: parseInt(userId) } : {})
+        items: cart.map(item => ({ product_id: item.id, quantity: item.qty || 1 })),
     };
 
     if (token) {
         // ── Authenticated: POST to /api/orders ────────────────────────────
         try {
-            const res  = await fetch(`${API}/orders`, {
+            const res  = await fetch(`${API}/orders/place`, {
                 method: "POST",
                 headers,
                 body: JSON.stringify(orderPayload)
@@ -486,10 +491,12 @@ async function checkout() {
             const data = await res.json();
             const orderId = data.order_id || data.id || data.orderId || "";
 
-            // ── Award XP for order ────────────────────────────────────────
-            let xp = parseInt(localStorage.getItem("xp") || "0");
-            xp += 100;
-            localStorage.setItem("xp", xp);
+            // ── XP synced from server response ───────────────────────
+            const xpEarned = data.xpEarned || 0;
+            const newXP = (parseInt(localStorage.getItem("xp")||"0")) + xpEarned;
+            localStorage.setItem("xp", newXP);
+            const storedUser = JSON.parse(localStorage.getItem("user")||"{}");
+            if (storedUser) { storedUser.xp = newXP; localStorage.setItem("user", JSON.stringify(storedUser)); }
 
             // ── Clear cart everywhere ─────────────────────────────────────
             localStorage.removeItem("cart");

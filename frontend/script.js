@@ -1,5 +1,5 @@
 // =============================================
-// script.js  —  ShopXP  (fully DB-integrated)
+// script.js  —  ShopXP  (fully fixed)
 // =============================================
 
 const API_BASE = (
@@ -8,16 +8,13 @@ const API_BASE = (
   window.location.hostname === ""
 ) ? "http://localhost:5000/api" : "/api";
 
-// Derive uploads base from API_BASE so images work under file:// too
 const UPLOADS_BASE = API_BASE.replace("/api", "/uploads");
 
 // ── Request helper ───────────────────────────
-
 async function apiRequest(path, options = {}) {
   const headers = { "Content-Type": "application/json" };
   const token = localStorage.getItem("token");
   if (token) headers["Authorization"] = `Bearer ${token}`;
-
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: { ...headers, ...(options.headers || {}) },
@@ -30,269 +27,291 @@ async function apiRequest(path, options = {}) {
 // =============================================
 // AUTH HELPERS
 // =============================================
-
 function getUser() {
   try { return JSON.parse(localStorage.getItem("user")); } catch { return null; }
 }
-
-function isLoggedIn() {
-  return !!getUser() && !!localStorage.getItem("token");
-}
-
+function isLoggedIn() { return !!getUser() && !!localStorage.getItem("token"); }
 function saveSession(token, user) {
   localStorage.setItem("token", token);
   localStorage.setItem("user", JSON.stringify(user));
 }
-
 function clearSession() {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
-  localStorage.removeItem("cart");   // local cart cache
+  localStorage.removeItem("cart");
 }
 
 // ── Register ─────────────────────────────────
-
 async function register() {
   const name     = document.getElementById("regName")?.value.trim();
   const email    = document.getElementById("regEmail")?.value.trim();
   const password = document.getElementById("regPassword")?.value.trim();
-
   clearErrors(["nameError","emailError","passwordError"]);
-
   let valid = true;
-  if (!name)              { showError("nameError", "Name is required");                   valid = false; }
-  if (!email?.includes("@")) { showError("emailError", "Enter a valid email");            valid = false; }
-  if ((password?.length ?? 0) < 6) { showError("passwordError", "Min 6 characters");    valid = false; }
+  if (!name)                { showError("nameError","Name is required"); valid=false; }
+  if (!email?.includes("@")){ showError("emailError","Enter a valid email"); valid=false; }
+  if ((password?.length??0)<6){ showError("passwordError","Min 6 characters"); valid=false; }
   if (!valid) return;
-
   try {
-    const data = await apiRequest("/auth/register", {
-      method: "POST",
-      body: JSON.stringify({ name, email, password }),
-    });
-
-    showSuccess("successMsg", "Registration successful! Redirecting...");
-    setTimeout(() => window.location.href = "login.html", 1200);
-  } catch (err) {
-    showError("emailError", err.message);
-  }
+    await apiRequest("/auth/register", { method:"POST", body:JSON.stringify({name,email,password}) });
+    showSuccess("successMsg","Registration successful! Redirecting...");
+    setTimeout(()=>window.location.href="login.html",1200);
+  } catch(err){ showError("emailError",err.message); }
 }
 
 // ── Login ────────────────────────────────────
-
 async function login() {
   const email    = document.getElementById("loginEmail")?.value.trim();
   const password = document.getElementById("loginPassword")?.value.trim();
-
   clearErrors(["loginError"]);
-
   try {
-    const data = await apiRequest("/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    });
-
+    const data = await apiRequest("/auth/login", { method:"POST", body:JSON.stringify({email,password}) });
     saveSession(data.token, data.user);
     showToast("Login successful 🎉");
-    setTimeout(() => window.location.href = "index.html", 800);
-  } catch (err) {
-    showError("loginError", err.message || "Invalid credentials");
-  }
+    setTimeout(()=>window.location.href="index.html",800);
+  } catch(err){ showError("loginError",err.message||"Invalid credentials"); }
 }
 
-// ── Logout ───────────────────────────────────
-
-function logout() {
-  clearSession();
-  showToast("Logged out 👋");
-  setTimeout(() => window.location.href = "login.html", 800);
-}
+function logout() { clearSession(); showToast("Logged out 👋"); setTimeout(()=>window.location.href="login.html",800); }
 
 // =============================================
-// CART  (DB-backed; local cache for counts)
+// CART  (DB-backed)
 // =============================================
-
-// Fetch cart from DB and cache locally
 async function syncCart() {
   if (!isLoggedIn()) return [];
   try {
     const items = await apiRequest("/cart");
     localStorage.setItem("cart", JSON.stringify(items));
     return items;
-  } catch {
-    return JSON.parse(localStorage.getItem("cart") || "[]");
-  }
+  } catch { return JSON.parse(localStorage.getItem("cart")||"[]"); }
 }
 
 async function updateCartCount() {
   const el = document.getElementById("cart-count");
   if (!el) return;
   const cart = await syncCart();
-  const total = cart.reduce((s, i) => s + (i.quantity || i.qty || 0), 0);
-  el.innerText = total;
+  el.innerText = cart.reduce((s,i)=>s+(i.quantity||i.qty||0),0);
 }
 
-// Add item by product_id  (called from product cards)
 async function addToCart(product) {
   if (!isLoggedIn()) {
     showToast("Please login first 🔑");
-    setTimeout(() => window.location.href = "login.html", 900);
+    setTimeout(()=>window.location.href="login.html",900);
     return;
   }
-
   try {
-    await apiRequest("/cart", {
-      method: "POST",
-      body: JSON.stringify({ product_id: product.id, quantity: 1 }),
-    });
-
+    await apiRequest("/cart", { method:"POST", body:JSON.stringify({product_id:product.id,quantity:1}) });
     addXP(10);
-    showToast(product.name + " added to cart 🎉");
+    showToast(product.name+" added to cart 🎉");
     await updateCartCount();
-  } catch (err) {
-    showToast("Could not add to cart ❌");
-    console.error(err);
-  }
+  } catch(err){ showToast("Could not add to cart ❌"); console.error(err); }
 }
 
-// Display full cart page
 async function displayCart() {
   const container = document.getElementById("cart-items");
   if (!container) return;
-
-  container.innerHTML = `<p style="color:#888;padding:20px;">Loading cart…</p>`;
-
+  container.innerHTML=`<p style="color:#888;padding:20px;">Loading cart…</p>`;
   try {
     const cart = await syncCart();
-
-    if (cart.length === 0) {
-      container.innerHTML = "<p class='empty-cart'>Your cart is empty 🛒</p>";
-      setCartTotals(0, 0, 0);
-      return;
+    if (cart.length===0) {
+      container.innerHTML="<p class='empty-cart'>Your cart is empty 🛒</p>";
+      setCartTotals(0,0,0); return;
     }
-
-    container.innerHTML = "";
-    let total = 0;
-
-    cart.forEach((item) => {
-      const price    = Number(item.price);
-      const qty      = item.quantity ?? item.qty ?? 1;
-      const itemTotal = price * qty;
-      total += itemTotal;
-
-      const div = document.createElement("div");
-      div.className = "cart-item-box";
-      div.innerHTML = `
+    container.innerHTML="";
+    let total=0;
+    cart.forEach(item=>{
+      const price=Number(item.price), qty=item.quantity??item.qty??1;
+      total+=price*qty;
+      const div=document.createElement("div");
+      div.className="cart-item-box";
+      div.innerHTML=`
         <div class="cart-item-left">
-          <img src="${item.image || 'https://via.placeholder.com/120'}" alt="${item.name}">
+          <img src="${item.image?UPLOADS_BASE+'/'+item.image:'https://placehold.co/120x120?text='+encodeURIComponent(item.name)}" alt="${item.name}" onerror="this.src='https://placehold.co/120x120?text=img'">
         </div>
         <div class="cart-item-center">
           <h4>${item.name}</h4>
           <p>₹${price.toLocaleString("en-IN")}</p>
           <div class="qty-controls">
-            <button onclick="changeQty(${item.id}, ${qty - 1})">−</button>
+            <button onclick="changeQty(${item.id},${qty-1})">−</button>
             <span>${qty}</span>
-            <button onclick="changeQty(${item.id}, ${qty + 1})">+</button>
+            <button onclick="changeQty(${item.id},${qty+1})">+</button>
           </div>
           <button onclick="removeItem(${item.id})" class="remove-btn">REMOVE</button>
-        </div>
-      `;
+        </div>`;
       container.appendChild(div);
     });
-
-    const mrp      = Math.round(total * 1.2);
-    const discount = mrp - total;
-    setCartTotals(total, mrp, discount);
-  } catch (err) {
-    container.innerHTML = "<p>Failed to load cart. Please refresh.</p>";
-    console.error(err);
-  }
+    const mrp=Math.round(total*1.2), discount=mrp-total;
+    setCartTotals(total,mrp,discount);
+  } catch(err){ container.innerHTML="<p>Failed to load cart. Please refresh.</p>"; console.error(err); }
 }
 
-function setCartTotals(total, mrp, discount) {
-  const set = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-  set("cart-total",    Math.round(total).toLocaleString("en-IN"));
-  set("mrp-total",     Math.round(mrp).toLocaleString("en-IN"));
+function setCartTotals(total,mrp,discount) {
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.innerText=v;};
+  set("cart-total",   Math.round(total).toLocaleString("en-IN"));
+  set("mrp-total",    Math.round(mrp).toLocaleString("en-IN"));
   set("discount-total",Math.round(discount).toLocaleString("en-IN"));
-  set("save-amount",   Math.round(discount).toLocaleString("en-IN"));
+  set("save-amount",  Math.round(discount).toLocaleString("en-IN"));
 }
 
-async function changeQty(cart_id, newQty) {
+async function changeQty(cart_id,newQty) {
   try {
-    if (newQty <= 0) {
-      await apiRequest(`/cart/${cart_id}`, { method: "DELETE" });
-    } else {
-      await apiRequest(`/cart/${cart_id}`, {
-        method: "PUT",
-        body: JSON.stringify({ quantity: newQty }),
-      });
-    }
-    await displayCart();
-    await updateCartCount();
-  } catch (err) {
-    showToast("Update failed ❌");
-  }
+    if (newQty<=0) await apiRequest(`/cart/${cart_id}`,{method:"DELETE"});
+    else            await apiRequest(`/cart/${cart_id}`,{method:"PUT",body:JSON.stringify({quantity:newQty})});
+    await displayCart(); await updateCartCount();
+  } catch(err){ showToast("Update failed ❌"); }
 }
 
 async function removeItem(cart_id) {
   try {
-    await apiRequest(`/cart/${cart_id}`, { method: "DELETE" });
-    await displayCart();
-    await updateCartCount();
-  } catch (err) {
-    showToast("Remove failed ❌");
-  }
+    await apiRequest(`/cart/${cart_id}`,{method:"DELETE"});
+    await displayCart(); await updateCartCount();
+  } catch(err){ showToast("Remove failed ❌"); }
 }
 
 // =============================================
-// CHECKOUT  →  POST /api/orders/place
+// CHECKOUT WITH PAYMENT SELECTION
 // =============================================
-
 async function checkout() {
-  if (!isLoggedIn()) {
-    showToast("Please login first 🔑");
-    return;
-  }
+  if (!isLoggedIn()) { showToast("Please login first 🔑"); return; }
 
-  // Always fetch the authoritative cart from DB, not stale localStorage
   let cart;
-  try {
-    cart = await apiRequest("/cart");
-  } catch {
-    cart = JSON.parse(localStorage.getItem("cart") || "[]");
+  try { cart = await apiRequest("/cart"); }
+  catch { cart = JSON.parse(localStorage.getItem("cart")||"[]"); }
+  if (!cart||cart.length===0) { showToast("Cart is empty ⚠️"); return; }
+
+  // Show payment modal
+  showPaymentModal(cart);
+}
+
+function showPaymentModal(cart) {
+  // Remove any existing modal
+  document.getElementById("payment-modal")?.remove();
+
+  const total = cart.reduce((s,i)=>s+(Number(i.price)*(i.quantity||i.qty||1)),0);
+
+  const modal = document.createElement("div");
+  modal.id = "payment-modal";
+  modal.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,0.6);
+    display:flex;align-items:center;justify-content:center;z-index:9999;`;
+
+  modal.innerHTML = `
+    <div style="background:white;border-radius:16px;padding:32px;width:90%;max-width:420px;font-family:Arial,sans-serif;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+      <h2 style="margin:0 0 6px;font-size:20px;color:#1a1a2e;">Choose Payment Method</h2>
+      <p style="color:#666;margin:0 0 24px;font-size:14px;">Total: <strong style="color:#212121;">₹${Math.round(total).toLocaleString("en-IN")}</strong></p>
+
+      <div id="payment-options" style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px;">
+
+        <label id="opt-cod" style="display:flex;align-items:center;gap:14px;border:2px solid #e0e0e0;border-radius:10px;padding:14px 16px;cursor:pointer;transition:.2s;">
+          <input type="radio" name="payment" value="cod" checked style="accent-color:#fb641b;width:18px;height:18px;">
+          <div>
+            <div style="font-weight:700;font-size:15px;">💵 Cash on Delivery</div>
+            <div style="font-size:12px;color:#888;margin-top:2px;">Pay when your order arrives</div>
+          </div>
+        </label>
+
+        <label id="opt-upi" style="display:flex;align-items:center;gap:14px;border:2px solid #e0e0e0;border-radius:10px;padding:14px 16px;cursor:pointer;transition:.2s;">
+          <input type="radio" name="payment" value="upi" style="accent-color:#fb641b;width:18px;height:18px;">
+          <div>
+            <div style="font-weight:700;font-size:15px;">📱 UPI</div>
+            <div style="font-size:12px;color:#888;margin-top:2px;">Google Pay, PhonePe, Paytm, etc.</div>
+          </div>
+        </label>
+
+      </div>
+
+      <!-- UPI ID input (shown only when UPI is selected) -->
+      <div id="upi-input-box" style="display:none;margin-bottom:20px;">
+        <label style="font-size:13px;font-weight:600;color:#444;display:block;margin-bottom:6px;">Enter UPI ID</label>
+        <input id="upi-id" type="text" placeholder="yourname@upi"
+          style="width:100%;padding:11px 14px;border:1.5px solid #d0d0d0;border-radius:8px;font-size:14px;box-sizing:border-box;outline:none;">
+        <div id="upi-error" style="color:#e53e3e;font-size:12px;margin-top:4px;"></div>
+      </div>
+
+      <div style="display:flex;gap:10px;">
+        <button onclick="document.getElementById('payment-modal').remove()"
+          style="flex:1;padding:13px;border:1.5px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:14px;font-weight:600;color:#555;">
+          Cancel
+        </button>
+        <button id="confirm-pay-btn" onclick="confirmPayment()"
+          style="flex:2;padding:13px;background:#fb641b;color:white;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;">
+          Confirm &amp; Place Order
+        </button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+
+  // Highlight selected radio + toggle UPI input
+  modal.querySelectorAll("input[name='payment']").forEach(radio => {
+    radio.addEventListener("change", () => {
+      modal.querySelectorAll("label[id^='opt-']").forEach(l=>l.style.borderColor="#e0e0e0");
+      radio.closest("label").style.borderColor="#fb641b";
+      document.getElementById("upi-input-box").style.display = radio.value==="upi" ? "block" : "none";
+    });
+  });
+  // Highlight COD by default
+  document.getElementById("opt-cod").style.borderColor="#fb641b";
+
+  // Store cart reference on modal for confirmPayment
+  modal._cart = cart;
+}
+
+async function confirmPayment() {
+  const modal = document.getElementById("payment-modal");
+  const selectedMethod = modal.querySelector("input[name='payment']:checked")?.value || "cod";
+  const cart = modal._cart;
+
+  // Validate UPI ID if UPI selected
+  if (selectedMethod === "upi") {
+    const upiId = document.getElementById("upi-id").value.trim();
+    if (!upiId || !upiId.includes("@")) {
+      document.getElementById("upi-error").innerText = "Please enter a valid UPI ID (e.g. name@upi)";
+      return;
+    }
+    document.getElementById("upi-error").innerText = "";
   }
 
-  if (!cart || cart.length === 0) { showToast("Cart is empty ⚠️"); return; }
+  const btn = document.getElementById("confirm-pay-btn");
+  btn.disabled = true;
+  btn.innerText = "Placing order…";
 
-  const items = cart.map(i => ({
-    product_id: i.product_id ?? i.id,
-    quantity:   i.quantity   ?? i.qty ?? 1,
-  }));
+  const items = cart.map(i=>({ product_id: i.product_id??i.id, quantity: i.quantity??i.qty??1 }));
 
   try {
-    // user_id is read from JWT on the server — not sent from client
     const result = await apiRequest("/orders/place", {
-      method: "POST",
-      body: JSON.stringify({ items }),
+      method:"POST",
+      body:JSON.stringify({ items, payment_method: selectedMethod }),
     });
 
-    // Sync XP and level from server response
-    const user = getUser();
-    const updatedUser = {
-      ...user,
-      xp:    result.newXP    ?? user.xp,
-      level: result.newLevel ?? user.level,
-      coins: (user.coins ?? 0) + (result.coinsEarned ?? 0),
-    };
-    localStorage.setItem("user", JSON.stringify(updatedUser));
-    localStorage.setItem("xp", updatedUser.xp);
+    modal.remove();
 
-    showToast(`Order placed 🎉 +${result.xpEarned} XP, +${result.coinsEarned} coins`);
+    // Sync XP / coins
+    const user = getUser();
+    const updated = { ...user, xp:result.newXP??user.xp, level:result.newLevel??user.level, coins:(user.coins??0)+(result.coinsEarned??0) };
+    localStorage.setItem("user", JSON.stringify(updated));
+    localStorage.setItem("xp", updated.xp);
     localStorage.removeItem("cart");
-    await displayCart();
-    await updateCartCount();
-  } catch (err) {
-    showToast("Checkout failed: " + err.message);
+
+    const methodLabel = selectedMethod==="cod" ? "Cash on Delivery" : "UPI";
+    showToast(`Order placed via ${methodLabel} 🎉 +${result.xpEarned} XP`);
+
+    // Show success on cart page if we're on it
+    const successEl = document.getElementById("order-success");
+    if (successEl) {
+      document.getElementById("cart-items").style.display="none";
+      document.getElementById("order-btn")?.style && (document.getElementById("order-btn").style.display="none");
+      const detail = document.getElementById("order-detail");
+      if (detail) detail.innerText = `Order #${result.orderId} confirmed via ${methodLabel}. You earned ${result.xpEarned} XP! 🎮`;
+      successEl.style.display="block";
+    } else {
+      await displayCart();
+      await updateCartCount();
+    }
+  } catch(err) {
+    btn.disabled = false;
+    btn.innerText = "Confirm & Place Order";
+    showToast("Order failed: "+err.message);
     console.error(err);
   }
 }
@@ -300,123 +319,37 @@ async function checkout() {
 // =============================================
 // PRODUCTS  →  GET /api/products
 // =============================================
-
 async function loadProducts() {
   const container = document.getElementById("products");
   if (!container) return;
-
+  container.innerHTML=`<p style="color:#888;padding:20px;grid-column:1/-1">Loading products…</p>`;
   try {
     const products = await apiRequest("/products");
+    if (!products.length) {
+      container.innerHTML=`<p style="color:#888;padding:20px;grid-column:1/-1">No products found. Run the seed SQL.</p>`;
+      return;
+    }
+    DB_PRODUCTS_CACHE = products;
     renderProductCards(container, products);
-  } catch {
-    // If API fails gracefully degrade to placeholder cards already in HTML
+  } catch(err) {
+    console.error("loadProducts:",err);
+    container.innerHTML=`<p style="color:#c00;padding:20px;grid-column:1/-1">Could not load products — is the backend running on port 5000?</p>`;
   }
 }
 
 function renderProductCards(container, products) {
-  container.innerHTML = "";
-  products.forEach(p => {
-    const div = document.createElement("article");
-    div.className = "product-card";
-    div.setAttribute("data-category", p.category || "");
-
-    div.innerHTML = `
-      <img src="${p.image ? UPLOADS_BASE + '/' + p.image : 'https://placehold.co/200x200?text=' + encodeURIComponent(p.name)}"
-           alt="${p.name}" loading="lazy">
+  container.innerHTML="";
+  products.forEach(p=>{
+    const div=document.createElement("article");
+    div.className="product-card";
+    div.setAttribute("data-category",p.category||"");
+    div.innerHTML=`
+      <img src="${p.image?UPLOADS_BASE+'/'+p.image:'https://placehold.co/200x200?text='+encodeURIComponent(p.name)}"
+           alt="${p.name}" loading="lazy" onerror="this.src='https://placehold.co/200x200?text=img'">
       <h3>${p.name}</h3>
       <p class="price">₹${Number(p.price).toLocaleString("en-IN")}</p>
-      <div class="reward">🎯 Earn ${Math.floor(p.price / 100)} XP</div>
-      <button onclick='addToCart(${JSON.stringify({id: p.id, name: p.name, price: p.price, image: p.image ? UPLOADS_BASE+"/"+p.image : ""})})'>
-        Add to Cart
-      </button>
-    `;
-    container.appendChild(div);
-  });
-}
-
-// =============================================
-// ML RECOMMENDATIONS
-// =============================================
-
-const SUBCATEGORY_PRODUCTS = {
-  Laptop:      { id: 201, name: "Laptop",           price: 55000 },
-  Mobile:      { id: 202, name: "Smartphone",       price: 22000 },
-  Accessories: { id: 203, name: "Wireless Earbuds", price: 2200  },
-  Men:         { id: 204, name: "Men's Jacket",      price: 2500  },
-  Women:       { id: 205, name: "Women's Dress",     price: 1800  },
-  Sports:      { id: 206, name: "Sports Shoes",      price: 3000  },
-  Furniture:   { id: 207, name: "Office Chair",      price: 12000 },
-  Kitchen:     { id: 208, name: "Microwave",         price: 7000  },
-  Decor:       { id: 209, name: "Wall Art Set",      price: 1500  },
-};
-
-const FALLBACK_SUGGESTIONS = [
-  { id: 301, name: "Smart Watch",       price: 5000  },
-  { id: 302, name: "Bluetooth Speaker", price: 2500  },
-  { id: 303, name: "Power Bank",        price: 1200  },
-  { id: 304, name: "Wireless Earbuds",  price: 2200  },
-];
-
-async function loadSuggestions() {
-  const container = document.getElementById("suggested-products");
-  if (!container) return;
-
-  container.innerHTML = `
-    <div class="suggestion-loading">
-      ${[...Array(4)].map(() => '<div class="skeleton-card"></div>').join("")}
-    </div>`;
-
-  const user = getUser();
-
-  if (!user?.id) {
-    renderSuggestions(FALLBACK_SUGGESTIONS, false);
-    return;
-  }
-
-  try {
-    const data = await apiRequest(`/recommendations?user_id=${user.id}&top_n=4`);
-
-    if (!data.recommendations?.length) { renderSuggestions(FALLBACK_SUGGESTIONS, false); return; }
-
-    const products = data.recommendations
-      .map(rec => {
-        const base = SUBCATEGORY_PRODUCTS[rec.subcategory];
-        if (!base) return null;
-        return { ...base, mlScore: rec.score, subcategory: rec.subcategory };
-      })
-      .filter(Boolean);
-
-    renderSuggestions(products.length ? products : FALLBACK_SUGGESTIONS, !!products.length);
-  } catch {
-    renderSuggestions(FALLBACK_SUGGESTIONS, false);
-  }
-}
-
-function renderSuggestions(products, isPersonalized) {
-  const container = document.getElementById("suggested-products");
-  if (!container) return;
-
-  const heading = document.querySelector(".suggest-section h2");
-  if (heading) {
-    heading.innerHTML = isPersonalized
-      ? "🤖 Recommended For You <span class='ml-badge'>AI-Powered</span>"
-      : "🔥 Suggested For You";
-  }
-
-  container.innerHTML = "";
-  products.forEach(p => {
-    const div = document.createElement("div");
-    div.className = "product-card";
-    const label = p.subcategory
-      ? `<div class="reward">🏷️ ${p.subcategory}</div>`
-      : `<div class="reward">🎯 Earn ${Math.floor(p.price / 100)} XP</div>`;
-
-    div.innerHTML = `
-      <img src="https://via.placeholder.com/200?text=${encodeURIComponent(p.name)}" alt="${p.name}">
-      <h3>${p.name}</h3>
-      <p class="price">₹${p.price.toLocaleString("en-IN")}</p>
-      ${label}
-      <button onclick='addToCart(${JSON.stringify({id: p.id, name: p.name, price: p.price, image: ""})})'>
+      <div class="reward">🎯 Earn ${Math.floor(p.price/100)} XP</div>
+      <button onclick='addToCart(${JSON.stringify({id:p.id,name:p.name,price:p.price,image:p.image})})'>
         Add to Cart
       </button>`;
     container.appendChild(div);
@@ -424,200 +357,200 @@ function renderSuggestions(products, isPersonalized) {
 }
 
 // =============================================
-// PROFILE  →  reads from localStorage (seeded by login)
+// ML RECOMMENDATIONS  (uses real DB products)
 // =============================================
+let DB_PRODUCTS_CACHE = [];
 
+const SUBCATEGORY_NAME_MAP = {
+  Laptop:      "Laptop",
+  Mobile:      "Smartphone A",
+  Accessories: "Smart Watch",
+  Men:         "Jacket",
+  Women:       "T-Shirt",
+  Sports:      "Shoes",
+  Kitchen:     "Microwave",
+  Decor:       "Refrigerator",
+};
+
+async function loadSuggestions() {
+  const container = document.getElementById("suggested-products");
+  if (!container) return;
+  container.innerHTML=`<div class="suggestion-loading">${[...Array(4)].map(()=>'<div class="skeleton-card"></div>').join("")}</div>`;
+
+  if (!DB_PRODUCTS_CACHE.length) {
+    try { DB_PRODUCTS_CACHE = await apiRequest("/products"); } catch {}
+  }
+  const fallback = DB_PRODUCTS_CACHE.slice(0,4);
+  const user = getUser();
+
+  if (!user?.id) { renderSuggestions(fallback,false); return; }
+
+  try {
+    const data = await apiRequest(`/recommendations?user_id=${user.id}&top_n=4`);
+    if (!data.recommendations?.length) { renderSuggestions(fallback,false); return; }
+
+    const products = data.recommendations.map(rec=>{
+      const targetName = SUBCATEGORY_NAME_MAP[rec.subcategory];
+      return DB_PRODUCTS_CACHE.find(p=>targetName&&p.name.toLowerCase().includes(targetName.toLowerCase()))||null;
+    }).filter(Boolean);
+
+    renderSuggestions(products.length?products:fallback, !!products.length);
+  } catch { renderSuggestions(fallback,false); }
+}
+
+function renderSuggestions(products, isPersonalized) {
+  const container = document.getElementById("suggested-products");
+  if (!container) return;
+  const heading = document.querySelector(".suggest-section h2");
+  if (heading) heading.innerHTML = isPersonalized
+    ? "🤖 Recommended For You <span class='ml-badge'>AI-Powered</span>"
+    : "🔥 Suggested For You";
+
+  container.innerHTML="";
+  products.forEach(p=>{
+    const div=document.createElement("div");
+    div.className="product-card";
+    div.innerHTML=`
+      <img src="${p.image?UPLOADS_BASE+'/'+p.image:'https://placehold.co/200x200?text='+encodeURIComponent(p.name)}"
+           alt="${p.name}" onerror="this.src='https://placehold.co/200x200?text=img'">
+      <h3>${p.name}</h3>
+      <p class="price">₹${Number(p.price).toLocaleString("en-IN")}</p>
+      <div class="reward">🎯 Earn ${Math.floor(p.price/100)} XP</div>
+      <button onclick='addToCart(${JSON.stringify({id:p.id,name:p.name,price:p.price,image:p.image})})'>
+        Add to Cart
+      </button>`;
+    container.appendChild(div);
+  });
+}
+
+// =============================================
+// PROFILE
+// =============================================
 function loadProfile() {
   const user = getUser();
-  if (!user) { window.location.href = "login.html"; return; }
-
-  const set = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-  set("profileName",  user.name  || user.email?.split("@")[0]);
+  if (!user) { window.location.href="login.html"; return; }
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.innerText=v;};
+  set("profileName",  user.name||user.email?.split("@")[0]);
   set("profileEmail", user.email);
-
-  // XP — prefer the DB value stored at login; fall back to localStorage
-  const xp    = user.xp  ?? parseInt(localStorage.getItem("xp")) ?? 0;
-  const level = user.level ?? Math.floor(xp / 500) + 1;
-  const coins = user.coins ?? 0;
-
+  const xp=user.xp??parseInt(localStorage.getItem("xp"))??0;
+  const level=user.level??Math.floor(xp/500)+1;
   set("xpPoints",   xp);
-  set("coinPoints", coins);
-
-  const icons = ["🔥","🥉","🥈","🥇","💎"];
-  const iconIdx = Math.min(Math.floor(level / 3), icons.length - 1);
-  set("levelIcon", `Level ${level} ${icons[iconIdx]}`);
-
-  const pct = ((xp % 500) / 500) * 100;
-  const bar = document.getElementById("xpProgress");
-  if (bar) setTimeout(() => bar.style.width = pct + "%", 100);
-
-  set("nextLevelText", `${500 - (xp % 500)} XP to next level`);
+  set("coinPoints", user.coins??0);
+  const icons=["🔥","🥉","🥈","🥇","💎"];
+  set("levelIcon",`Level ${level} ${icons[Math.min(Math.floor(level/3),4)]}`);
+  const pct=((xp%500)/500)*100;
+  const bar=document.getElementById("xpProgress");
+  if (bar) setTimeout(()=>bar.style.width=pct+"%",100);
+  set("nextLevelText",`${500-(xp%500)} XP to next level`);
 }
 
 // =============================================
 // REWARDS
 // =============================================
-
 function loadRewards() {
-  const user  = getUser();
-  const xp    = user?.xp  ?? parseInt(localStorage.getItem("xp")) ?? 0;
-  const level = user?.level ?? Math.floor(xp / 500) + 1;
-
-  const set = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-  set("xp",        xp);
-  set("levelBadge","Level " + level);
-
-  const pct = ((xp % 500) / 500) * 100;
-  const bar = document.getElementById("progressBar");
-  if (bar) setTimeout(() => bar.style.width = pct + "%", 100);
-
-  set("nextLevelText", `${500 - (xp % 500)} XP to next level`);
-  checkRewardAccess(level);
-  updateCartCount();
+  const user=getUser();
+  const xp=user?.xp??parseInt(localStorage.getItem("xp"))??0;
+  const level=user?.level??Math.floor(xp/500)+1;
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.innerText=v;};
+  set("xp",xp); set("levelBadge","Level "+level);
+  const pct=((xp%500)/500)*100;
+  const bar=document.getElementById("progressBar");
+  if (bar) setTimeout(()=>bar.style.width=pct+"%",100);
+  set("nextLevelText",`${500-(xp%500)} XP to next level`);
+  checkRewardAccess(level); updateCartCount();
 }
 
 function checkRewardAccess(level) {
-  const claimed = JSON.parse(localStorage.getItem("claimedRewards") || "[]");
-  [2, 3, 5].forEach(lvl => {
-    const btn = document.getElementById("reward" + lvl);
+  const claimed=JSON.parse(localStorage.getItem("claimedRewards")||"[]");
+  [2,3,5].forEach(lvl=>{
+    const btn=document.getElementById("reward"+lvl);
     if (!btn) return;
-    if (claimed.includes(lvl))  { btn.innerText = "Claimed"; btn.disabled = true; }
-    else                         btn.disabled = level < lvl;
+    if (claimed.includes(lvl)) { btn.innerText="Claimed"; btn.disabled=true; }
+    else btn.disabled=level<lvl;
   });
 }
 
 function claimReward(level) {
-  const claimed = JSON.parse(localStorage.getItem("claimedRewards") || "[]");
+  const claimed=JSON.parse(localStorage.getItem("claimedRewards")||"[]");
   if (claimed.includes(level)) { alert("Already claimed!"); return; }
   claimed.push(level);
-  localStorage.setItem("claimedRewards", JSON.stringify(claimed));
-  showToast("Reward for Level " + level + " claimed 🎉");
-  loadRewards();
+  localStorage.setItem("claimedRewards",JSON.stringify(claimed));
+  showToast("Reward for Level "+level+" claimed 🎉"); loadRewards();
 }
 
 // =============================================
-// CONTACT  →  POST /api/contact
+// CONTACT
 // =============================================
-
 async function sendMessage(event) {
   event.preventDefault();
-  const form    = event.target;
-  const name    = form.querySelector('[name="name"]')?.value.trim();
-  const email   = form.querySelector('[name="email"]')?.value.trim();
-  const message = form.querySelector('[name="message"]')?.value.trim();
-
-  try {
-    await apiRequest("/contact", {
-      method: "POST",
-      body: JSON.stringify({ name, email, message }),
-    });
-    showToast("Message sent ✉️");
-    form.reset();
-  } catch {
-    // Gracefully fall back
-    showToast("Message sent ✉️");
-    form.reset();
-  }
+  const form=event.target;
+  const name=form.querySelector('[name="name"]')?.value.trim();
+  const email=form.querySelector('[name="email"]')?.value.trim();
+  const message=form.querySelector('[name="message"]')?.value.trim();
+  try { await apiRequest("/contact",{method:"POST",body:JSON.stringify({name,email,message})}); }
+  catch {}
+  showToast("Message sent ✉️"); form.reset();
 }
 
 // =============================================
 // XP HELPERS
 // =============================================
-
-function getXP() { return parseInt(localStorage.getItem("xp")) || 0; }
-
+function getXP() { return parseInt(localStorage.getItem("xp"))||0; }
 function addXP(amount) {
-  const xp = getXP() + amount;
-  localStorage.setItem("xp", xp);
-  // Keep user object in sync
-  const user = getUser();
-  if (user) { user.xp = xp; localStorage.setItem("user", JSON.stringify(user)); }
+  const xp=getXP()+amount; localStorage.setItem("xp",xp);
+  const user=getUser();
+  if (user) { user.xp=xp; localStorage.setItem("user",JSON.stringify(user)); }
 }
 
 // =============================================
 // CATEGORY FILTER
 // =============================================
-
 function filterProducts(category, event) {
-  document.querySelectorAll(".product-card").forEach(card => {
-    const cat = card.getAttribute("data-category");
-    card.style.display = (category === "all" || cat === category) ? "block" : "none";
+  document.querySelectorAll(".product-card").forEach(card=>{
+    const cat=card.getAttribute("data-category");
+    card.style.display=(category==="all"||cat===category)?"block":"none";
   });
-
-  document.querySelectorAll(".category").forEach(c => c.classList.remove("active"));
+  document.querySelectorAll(".category").forEach(c=>c.classList.remove("active"));
   event?.currentTarget?.classList.add("active");
-
-  document.getElementById("products")?.scrollIntoView({ behavior: "smooth" });
+  document.getElementById("products")?.scrollIntoView({behavior:"smooth"});
 }
 
 // =============================================
 // UI HELPERS
 // =============================================
-
 function showToast(msg) {
-  const t = document.createElement("div");
-  t.className = "toast";
-  t.innerText = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2200);
+  const t=document.createElement("div"); t.className="toast"; t.innerText=msg;
+  document.body.appendChild(t); setTimeout(()=>t.remove(),2200);
 }
-
-function showError(id, msg) {
-  const el = document.getElementById(id);
-  if (el) el.innerText = msg;
-}
-
-function showSuccess(id, msg) {
-  const el = document.getElementById(id);
-  if (el) { el.innerText = msg; el.style.color = "green"; }
-}
-
-function clearErrors(ids) {
-  ids.forEach(id => { const el = document.getElementById(id); if (el) el.innerText = ""; });
-}
-
-function toggleMenu() {
-  document.getElementById("nav")?.classList.toggle("active");
-}
+function showError(id,msg){const el=document.getElementById(id);if(el)el.innerText=msg;}
+function showSuccess(id,msg){const el=document.getElementById(id);if(el){el.innerText=msg;el.style.color="green";}}
+function clearErrors(ids){ids.forEach(id=>{const el=document.getElementById(id);if(el)el.innerText="";});}
+function toggleMenu(){document.getElementById("nav")?.classList.toggle("active");}
 
 // =============================================
 // INIT
 // =============================================
-
 document.addEventListener("DOMContentLoaded", async () => {
-
-  // ── Update navbar Login → Logout when authenticated ─────────────────────
+  // Swap Login → Logout in navbar
   const navAuthLink = document.getElementById("nav-auth-link");
   if (navAuthLink && localStorage.getItem("token")) {
-    navAuthLink.textContent = "Logout";
-    navAuthLink.href = "#";
-    navAuthLink.addEventListener("click", (e) => {
-      e.preventDefault();
-      clearSession();
-      window.location.href = "login.html";
-    });
+    navAuthLink.textContent="Logout"; navAuthLink.href="#";
+    navAuthLink.addEventListener("click",(e)=>{e.preventDefault();clearSession();window.location.href="login.html";});
   }
 
-  // Protect auth-required pages
+  // Protect pages
   const path = window.location.pathname;
-  const protectedPages = ["profile.html", "reward.html", "cart.html"];
-  if (protectedPages.some(p => path.includes(p)) && !isLoggedIn()) {
-    window.location.href = "login.html";
-    return;
+  if (["profile.html","reward.html","cart.html"].some(p=>path.includes(p)) && !isLoggedIn()) {
+    window.location.href="login.html"; return;
   }
-
-  // Redirect logged-in users away from auth pages
-  if ((path.includes("login.html") || path.includes("register.html")) && isLoggedIn()) {
-    window.location.href = "index.html";
-    return;
+  if ((path.includes("login.html")||path.includes("register.html")) && isLoggedIn()) {
+    window.location.href="index.html"; return;
   }
 
   await updateCartCount();
-
-  if (document.getElementById("cart-items")) await displayCart();
-  if (document.getElementById("profileName"))  loadProfile();
-  if (document.getElementById("levelBadge"))   loadRewards();
-  if (document.getElementById("products"))     await loadProducts();
-
+  if (document.getElementById("cart-items"))  await displayCart();
+  if (document.getElementById("profileName")) loadProfile();
+  if (document.getElementById("levelBadge"))  loadRewards();
+  if (document.getElementById("products"))    await loadProducts();
   await loadSuggestions();
 });

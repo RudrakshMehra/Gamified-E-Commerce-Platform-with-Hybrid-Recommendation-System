@@ -64,7 +64,7 @@ CREATE TABLE claimed_rewards (
   UNIQUE(user_id, level)
 );
 
-
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method TEXT DEFAULT 'cod';
 
 
 
