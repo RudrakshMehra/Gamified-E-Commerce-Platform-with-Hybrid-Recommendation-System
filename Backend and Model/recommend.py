@@ -5,6 +5,19 @@ from sklearn.metrics.pairwise import cosine_similarity
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
+import urllib.request
+
+# ─────────────────────────────────────────
+# AUTO-DOWNLOAD CSV IF NOT PRESENT
+# ─────────────────────────────────────────
+
+CSV_PATH = os.getenv("CLEANED_CSV", "cleaned_transactions.csv")
+CSV_URL = os.getenv("CSV_URL", "https://raw.githubusercontent.com/RudrakshMehra/Gamified-E-Commerce-Platform-with-Hybrid-Recommendation-System/refs/heads/csv-data/Backend%20and%20Model/cleaned_transactions.csv")
+
+if not os.path.exists(CSV_PATH) and CSV_URL:
+    print("[INFO] Downloading CSV from GitHub...")
+    urllib.request.urlretrieve(CSV_URL, CSV_PATH)
+    print("[INFO] CSV downloaded successfully.")
 
 app = Flask(__name__)
 CORS(app)
@@ -12,8 +25,6 @@ CORS(app)
 # ─────────────────────────────────────────
 # LOAD & PREPARE DATA
 # ─────────────────────────────────────────
-
-CSV_PATH = os.getenv("CLEANED_CSV", "cleaned_transactions.csv")
 
 try:
     df = pd.read_csv(CSV_PATH)
@@ -172,15 +183,14 @@ def recommend():
     if not user_id:
         return jsonify({"error": "user_id query param is required"}), 400
 
-    # user_id may be numeric in the CSV
     try:
         user_id = int(user_id)
     except ValueError:
-        pass  # keep as string if non-numeric
+        pass
 
     try:
         top_n = int(top_n)
-        top_n = max(1, min(top_n, 10))   # clamp 1-10
+        top_n = max(1, min(top_n, 10))
     except ValueError:
         top_n = 3
 
@@ -203,7 +213,6 @@ def recommend():
 
 @app.route("/users", methods=["GET"])
 def list_users():
-    """Returns a sample of available user IDs — useful for testing."""
     if not DATA_LOADED:
         return jsonify({"error": "Model data not loaded."}), 503
 
