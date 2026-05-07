@@ -7,11 +7,18 @@ const orderRoutes          = require("./routes/order");
 const productRoutes        = require("./routes/product");
 const cartRoutes           = require("./routes/cart");
 const contactRoutes        = require("./routes/contact");
-const recommendationRoutes = require("./routes/recommendation"); // ← NEW
+const recommendationRoutes = require("./routes/recommendation");
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    "https://shopxp-frontend.onrender.com",
+    "http://localhost:5500",
+    "http://127.0.0.1:5500"
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 // Make uploads folder publicly accessible
