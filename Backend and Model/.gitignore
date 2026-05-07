@@ -1,3 +1,9 @@
 # Ignore sensitive files
 jwt_token.txt
 .env
+
+node_modules/
+.env
+*.csv
+__pycache__/
+*.pyc

@@ -39,6 +39,8 @@ function clearSession() {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
   localStorage.removeItem("cart");
+  localStorage.removeItem("claimedRewards"); // reset per-user reward state
+  localStorage.removeItem("xp");             // reset per-user XP cache
 }
 
 // ── Register ─────────────────────────────────
@@ -66,6 +68,9 @@ async function login() {
   clearErrors(["loginError"]);
   try {
     const data = await apiRequest("/auth/login", { method:"POST", body:JSON.stringify({email,password}) });
+    // Wipe any previous user's reward/XP state before storing new session
+    localStorage.removeItem("claimedRewards");
+    localStorage.removeItem("xp");
     saveSession(data.token, data.user);
     showToast("Login successful 🎉");
     setTimeout(()=>window.location.href="index.html",800);

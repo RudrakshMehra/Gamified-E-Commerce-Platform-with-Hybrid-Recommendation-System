@@ -246,6 +246,8 @@ async function loginUser() {
 
     localStorage.setItem("token", data.token);
     localStorage.setItem("user",  JSON.stringify(data.user));
+    // Clear any previous user's reward/XP state so rewards start fresh
+    localStorage.removeItem("claimedRewards");
     // Seed XP for profile page
     localStorage.setItem("xp", data.user.xp ?? 0);
 

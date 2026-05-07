@@ -219,14 +219,8 @@ async function registerUser() {
     }
 
     // ── SUCCESS ──────────────────────────────────────────────────────────────
-    // If the backend auto-logs in on register (returns token + user), store them
-    if (data.token) {
-      localStorage.setItem("token",   data.token);
-      localStorage.setItem("user_id", data.user?.id   || data.user_id || "");
-      localStorage.setItem("name",    data.user?.name || name);
-      localStorage.setItem("email",   data.user?.email || email);
-    }
-
+    // Do NOT store token here — send user to login so session starts fresh
+    // (avoids stale claimedRewards / cart data from a previous account)
     const s = document.getElementById("successMsg");
     s.innerText = "Account created! Redirecting to login…";
     s.style.display = "block";
@@ -242,8 +236,14 @@ async function registerUser() {
   }
 }
 
-// ── REDIRECT IF ALREADY LOGGED IN ───────────────────────────────────────────
-if (localStorage.getItem("token")) window.location.href = "index.html";
+// ── CLEAR ANY STALE SESSION SO NEW ACCOUNT STARTS FRESH ─────────────────────
+// Do not auto-redirect; let the user fill in the form freely.
+// Clear leftover localStorage so reward/cart state doesn't bleed into the new account.
+localStorage.removeItem("token");
+localStorage.removeItem("user");
+localStorage.removeItem("cart");
+localStorage.removeItem("claimedRewards");
+localStorage.removeItem("xp");
 </script>
 </body>
 </html>
